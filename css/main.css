@@ -1,0 +1,59 @@
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.pass {
+  color: darkgreen;
+}
+
+.fail {
+  color: red;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1c1c1e;
+    color: lightgray;
+  }
+
+  .pass {
+    color: lightgreen;
+  }
+
+  a {
+    color: #8AB4F8;
+  }
+
+  a:visited {
+    color: #b18af8;
+  }
+}
+
+.flex {
+  display: flex;
+}
+
+.inRow {
+  width: 100%;
+  padding: 10px;
+}
+
+.inNote {
+  padding: 10px;
+}
+
+.no-web-serial {
+  font-size: larger;
+  color: red;
+}
+
+#connecton_img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}

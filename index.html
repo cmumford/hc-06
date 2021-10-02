@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>HC-06 Configurator</title>
+  <script src="js/shared.js"></script>
+  <script src="js/web_app.js"></script>
+  <link rel="stylesheet" href="css/main.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body onload="init()">
+  <h1>HC-06 Configurator</h1>
+  <div id="web_serial_available" style="visibility: visible;">
+    <p>
+      This is a configuration program for the
+      <a href="http://www.dsdtech-global.com/search/label/HC-06">
+        DSD TECH HC-06 Bluetooth module</a>.
+    </p>
+    <p>Trouble connecting? See: <a href="connection.html">connection notes</a>.</p>
+    <button type="button" id="btn_port_open" onclick="readState()">Connect</button>
+    <button type="button" id="btn_port_close" onclick="disconnectFromPort()">Disconnect</button><br><br>
+
+    <form>
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" onkeydown="setName(this)">
+      <span class="last-saved" style="visibility: visible;"> (Last seen value)</span>
+      <br><br>
+
+      <label for="baud">Baud:</label>
+      <select name="speed" id="baud" onchange="baudSelected(this)">
+        <option value="1">1,200</option>
+        <option value="2">2,400</option>
+        <option value="3">4,800</option>
+        <option value="4" selected>9,600</option>
+        <option value="5">19,200</option>
+        <option value="6">38,400</option>
+        <option value="7">57,600</option>
+        <option value="8">115,200</option>
+        <option value="9">230,400</option>
+        <option value="A">460,800</option>
+        <option value="B">921,600</option>
+        <option value="C">1,382,400</option>
+      </select>
+      <span class="last-saved" style="visibility: visible;"> (Last seen value)</span>
+    </form>
+    <br>
+  </div>
+
+  <!-- Only one of the three below will be visible. -->
+  <div id="web_serial_none" class="no-web-serial" style="visibility: hidden;">
+    Web Serial is not supported by this browser.
+  </div>
+  <div id="web_serial_insecure" class="no-web-serial" style="visibility: hidden;">
+    Web Serial requires a secure context (HTTPS). For development purposes it
+    will support HTTP, but only the on the loopback adapter (i.e. "localhost").
+  </div>
+  <div id="web_serial_unavailable" class="no-web-serial" style="visibility: hidden;">
+    Web Serial is supported by this browser but this device does not have
+    Web Serial capabilities.
+  </div>
+  <pre id='status'></pre>
+</body>
+
+</html>
