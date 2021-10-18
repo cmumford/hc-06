@@ -7,19 +7,21 @@
   <title>HC-06 Configurator</title>
   <script src="js/shared.js"></script>
   <script src="js/web_app.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css"
+    integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5"
+    crossorigin="anonymous">
   <link rel="stylesheet" href="css/main.css">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body onload="init()">
   <h1>HC-06 Configurator</h1>
-  <div id="web_serial_available" style="visibility: visible;">
+  <div id="web_serial_available" style="display: block;">
     <p>
       This is a configuration program for the
       <a href="http://www.dsdtech-global.com/search/label/HC-06">
         DSD TECH HC-06 Bluetooth module</a>.
     </p>
-    <p>Trouble connecting? See: <a href="connection.html">connection notes</a>.</p>
     <button type="button" id="btn_port_open" onclick="readState()">Connect</button>
     <button type="button" id="btn_port_close" onclick="disconnectFromPort()">Disconnect</button><br><br>
 
@@ -52,18 +54,19 @@
     </p>
   </div>
 
-  <!-- Only one of the three below will be visible. -->
-  <div id="web_serial_none" class="no-web-serial" style="visibility: hidden;">
+  <!-- Only one of the three below will be displayed. -->
+  <div id="web_serial_none" class="no-web-serial" style="display: none;">
     Web Serial is not supported by this browser.
   </div>
-  <div id="web_serial_insecure" class="no-web-serial" style="visibility: hidden;">
+  <div id="web_serial_insecure" class="no-web-serial" style="display: none;">
     Web Serial requires a secure context (HTTPS). For development purposes it
     will support HTTP, but only the on the loopback adapter (i.e. "localhost").
   </div>
-  <div id="web_serial_unavailable" class="no-web-serial" style="visibility: hidden;">
+  <div id="web_serial_unavailable" class="no-web-serial" style="display: none;">
     Web Serial is supported by this browser but this device does not have
     Web Serial capabilities.
   </div>
+  <p>Trouble connecting? See: <a href="connection.html">connection notes</a>.</p>
   <pre id='status'></pre>
 </body>
 

@@ -186,19 +186,19 @@ async function init() {
     console.log('Web Serial not supported.');
     $('web_serial_available').style.display = 'none';
     if (window.isSecureContext == 'https') {
-      $('web_serial_none').style.visibility = 'visible';
+      $('web_serial_none').style.display = 'block';
     } else {
-      $('web_serial_insecure').style.visibility = 'visible';
+      $('web_serial_insecure').style.display = 'block';
     }
     return;
   }
 
-  // Believe Web Serial API is always avaliable. Confirm and delete this
+  // Believe Web Serial API is always available. Confirm and delete this
   // section if so.
   const available = true;
   if (!available) {
     $('web_serial_available').style.display = 'none';
-    $('web_serial_unavailable').style.visibility = 'visible';
+    $('web_serial_unavailable').style.display = 'block';
   }
 
   sensitizeControls();
