@@ -169,18 +169,12 @@ async function connectToPort() {
   await ping();
 }
 
-async function disconnectFromPort() {
-  closePort();
-}
-
 function toggleConnectState() {
-  /*
-  if (not connected) {
-    readState();
+  if (isPortConnected()) {
+    closePort();
   } else {
-    disconnectFromPort();
+    readState();
   }
-  */
 }
 
 async function readState() {
@@ -302,7 +296,7 @@ function startNameChangeTimer(element) {
     window.clearTimeout(nameChangeTimer);
     nameChangeTimer = undefined;
   }
-  nameChangeTimer = window.setTimeout(saveDeviceName, /*milliseconds=*/500);
+  nameChangeTimer = window.setTimeout(saveDeviceName, /*milliseconds=*/ 500);
 }
 
 async function setName(element) {
@@ -312,9 +306,13 @@ async function setName(element) {
 }
 
 function sensitizeControls() {
-  $('name').disabled = !isPortConnected();
-  $('btn_port_open').disabled = isPortOpen();
-  $('btn_port_close').disabled = !isPortOpen();
+  $('aligned-name').disabled = !isPortConnected();
+  var toggleConnect = $('toggle-connect');
+  if (isPortOpen()) {
+    toggleConnect.innerText = 'Disconnect';
+  } else {
+    toggleConnect.innerText = 'Connect';
+  }
 
   var all = document.getElementsByClassName('last-saved');
   for (var i = 0; i < all.length; i++) {
@@ -325,6 +323,5 @@ function sensitizeControls() {
 function setControlValues() {
   const value = parseInt(baudRateToValue(deviceState.baudRate), 16);
   const index = value - 1;
-  $('baud').selectedIndex = index;
-  $('name').value = deviceState.name;
+  $('aligned-baud').selectedIndex = index;
 }

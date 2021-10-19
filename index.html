@@ -26,9 +26,9 @@
     <div id="layout" class="pure-g">
       <div class="content pure-u-1 pure-u-md-3-4">
         <div>
+          <button class="pure-button pure-button-primary" id="toggle-connect" onclick="toggleConnectState()">Connect</button>
           <form class="pure-form pure-form-aligned">
             <fieldset>
-              <button type="submit" class="pure-button pure-button-primary" onclick="toggleConnectState()">Connect</button>
               <div class="pure-control-group">
                 <label for="aligned-name">Device Name</label>
                 <input type="text" id="aligned-name" placeholder="Device name" onkeydown="startNameChangeTimer(this)" />
@@ -36,7 +36,7 @@
               </div>
               <div class="pure-control-group">
                 <label for="aligned-name">Baud</label>
-                <select class="pure-input-medium" name="baud" id="aligned-baud" onchange="baudSelected(this)">
+                <select class="pure-input-medium" id="aligned-baud" name="baud" onchange="baudSelected(this)">
                   <option value="1">1,200</option>
                   <option value="2">2,400</option>
                   <option value="3">4,800</option>
