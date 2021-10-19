@@ -29,3 +29,15 @@
   margin-right: auto;
   width: 50%;
 }
+
+.connected {
+  background-color: rgb(174, 248, 165);
+}
+
+.disconnected {
+  background-color: rgb(75, 75, 75);
+}
+
+#connect-banner {
+  padding: 10px;
+}

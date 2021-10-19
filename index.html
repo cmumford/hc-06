@@ -26,7 +26,10 @@
     <div id="layout" class="pure-g">
       <div class="content pure-u-1 pure-u-md-3-4">
         <div>
-          <button class="pure-button pure-button-primary" id="toggle-connect" onclick="toggleConnectState()">Connect</button>
+          <div id="connect-banner" class="disconnected">
+            <button class="pure-button pure-button-primary" id="toggle-connect"
+              onclick="toggleConnectState()">Connect</button>
+          </div>
           <form class="pure-form pure-form-aligned">
             <fieldset>
               <div class="pure-control-group">

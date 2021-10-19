@@ -308,10 +308,15 @@ async function setName(element) {
 function sensitizeControls() {
   $('aligned-name').disabled = !isPortConnected();
   var toggleConnect = $('toggle-connect');
+  var connectBanner = $('connect-banner');
   if (isPortOpen()) {
     toggleConnect.innerText = 'Disconnect';
+    connectBanner.classList.add('connected');
+    connectBanner.classList.remove('disconnected');
   } else {
     toggleConnect.innerText = 'Connect';
+    connectBanner.classList.add('disconnected');
+    connectBanner.classList.remove('connected');
   }
 
   var all = document.getElementsByClassName('last-saved');
