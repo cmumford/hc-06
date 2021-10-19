@@ -9,6 +9,7 @@ var port;
 var isConnected = false;
 var isOpen = false;
 var deviceStateDb;
+var nameChangeTimer;
 const kDbName = 'HC-06';
 const kDbVersion = 1;
 const kDbObjStoreName = 'state';
@@ -172,6 +173,16 @@ async function disconnectFromPort() {
   closePort();
 }
 
+function toggleConnectState() {
+  /*
+  if (not connected) {
+    readState();
+  } else {
+    disconnectFromPort();
+  }
+  */
+}
+
 async function readState() {
   try {
     await connectToPort();
@@ -277,6 +288,21 @@ async function baudSelected(selectObject) {
     await setPortBaud(value);
     await reopenPort();
   }
+}
+
+function saveDeviceName() {
+  nameChangeTimer = undefined;
+
+  const name = $('aligned-name').value;
+  logInfo(`Saving device name ${name}`);
+}
+
+function startNameChangeTimer(element) {
+  if (nameChangeTimer) {
+    window.clearTimeout(nameChangeTimer);
+    nameChangeTimer = undefined;
+  }
+  nameChangeTimer = window.setTimeout(saveDeviceName, /*milliseconds=*/500);
 }
 
 async function setName(element) {
