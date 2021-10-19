@@ -29,6 +29,7 @@ function getDbData(db) {
   var request = store.get(kDbPrimaryKeyValue);
   request.onsuccess = (event) => {
     deviceState = request.result;
+    sensitizeControls();
   };
 }
 
@@ -114,7 +115,7 @@ async function setPortBaud(baudValue) {
   putDbData(deviceStateDb);
 }
 
-async function setPortName(name) {
+async function setDeviceName(name) {
   if (name.length > 20) {
     throw Error('Name too long: 20 chars max');
   }
@@ -151,6 +152,7 @@ async function openPort() {
     });
     isConnected = true;
     isOpen = true;
+    putDbData(deviceStateDb);
   } finally {
     sensitizeControls();
   }
@@ -211,6 +213,7 @@ async function init() {
   navigator.serial.addEventListener('connect', onConnect);
   navigator.serial.addEventListener('disconnect', onDisconnect);
 
+  logInfo('Loading device state');
   loadSavedDeviceState();
 }
 
@@ -284,11 +287,12 @@ async function baudSelected(selectObject) {
   }
 }
 
-function saveDeviceName() {
+function changeNameCallback() {
   nameChangeTimer = undefined;
 
   const name = $('aligned-name').value;
-  logInfo(`Saving device name ${name}`);
+  logInfo(`Setting device name to "${name}"`);
+  setDeviceName(name);
 }
 
 function startNameChangeTimer(element) {
@@ -296,13 +300,7 @@ function startNameChangeTimer(element) {
     window.clearTimeout(nameChangeTimer);
     nameChangeTimer = undefined;
   }
-  nameChangeTimer = window.setTimeout(saveDeviceName, /*milliseconds=*/ 500);
-}
-
-async function setName(element) {
-  if (event.key === 'Enter') {
-    setPortName(element.value);
-  }
+  nameChangeTimer = window.setTimeout(changeNameCallback, /*milliseconds=*/ 500);
 }
 
 function sensitizeControls() {
@@ -318,6 +316,9 @@ function sensitizeControls() {
     connectBanner.classList.add('disconnected');
     connectBanner.classList.remove('connected');
   }
+
+  logInfo(`Setting name to "${deviceState.name}"`);
+  $('aligned-name').value = deviceState.name;
 
   var all = document.getElementsByClassName('last-saved');
   for (var i = 0; i < all.length; i++) {
