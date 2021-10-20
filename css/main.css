@@ -32,10 +32,14 @@
 
 .connected {
   background-color: rgb(174, 248, 165);
+  transition-property: background-color;
+  transition-duration: 0.5s;
 }
 
 .disconnected {
   background-color: rgb(75, 75, 75);
+  transition-property: background-color;
+  transition-duration: 0.5s;
 }
 
 .connect-error {
