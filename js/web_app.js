@@ -9,6 +9,8 @@ var port;
 var isConnected = false;
 var isOpen = false;
 var deviceStateDb;
+var createdDatabase = false; // There was no settings db at page load and was created.
+var deviceUpdated = false;  // The settings were written (at least once) to device.
 var nameChangeTimer;
 const kDbName = 'HC-06';
 const kDbVersion = 1;
@@ -62,13 +64,13 @@ function getDbData(db) {
 // Read the current device state from the database.
 function putDbData(db) {
   var transaction = db.transaction([kDbObjStoreName], 'readwrite');
-  transaction.oncomplete = (event) => {};
+  transaction.oncomplete = (event) => { };
   transaction.onerror = (event) => {
     logError(`Put transaction error: ${event.target.errorCode}`);
   };
   var store = transaction.objectStore(kDbObjStoreName);
   var request = store.put(deviceState, kDbPrimaryKeyValue);
-  request.onsuccess = (event) => {};
+  request.onsuccess = (event) => { };
 }
 
 // Open the device state database and read the saved device state.
@@ -83,6 +85,7 @@ function loadSavedDeviceState() {
   };
   dbOpenRequest.onupgradeneeded = (event) => {
     logInfo('Created device state database.');
+    createdDatabase = true;
     var db = event.target.result;
     var objectStore = db.createObjectStore(kDbObjStoreName);
     objectStore.transaction.oncomplete = (event) => {
@@ -102,12 +105,14 @@ function isPortConnected() {
 function onConnect(event) {
   logInfo('Connected to serial port.');
   isConnected = true;
+  deviceUpdated = false;
   sensitizeControls();
 }
 
 function onDisconnect(event) {
   logInfo('Disconnected from serial port.');
   isConnected = false;
+  deviceUpdated = false;
   sensitizeControls();
 }
 
@@ -122,11 +127,12 @@ async function sendAtCommand(payload) {
 
   // Read response.
   reader = port.readable.getReader();
-  const {value, done} = await reader.read();
+  const { value, done } = await reader.read();
   reader.releaseLock();
   if (done) {
     logInfo('Port is closed');
     isConnected = false;
+    deviceUpdated = false;
     isOpen = false;
     sensitizeControls();
     return null;
@@ -160,6 +166,7 @@ async function closePort() {
   try {
     isConnected = false;
     isOpen = false;
+    deviceUpdated = false;
     await port.close();
   } finally {
     sensitizeControls();
@@ -177,6 +184,7 @@ async function openPort() {
       flowControl: 'none'
     });
     isConnected = true;
+    deviceUpdated = false;
     isOpen = true;
     putDbData(deviceStateDb);
   } finally {
@@ -326,7 +334,7 @@ function startNameChangeTimer(element) {
     nameChangeTimer = undefined;
   }
   nameChangeTimer =
-      window.setTimeout(changeNameCallback, /*milliseconds=*/ 500);
+    window.setTimeout(changeNameCallback, /*milliseconds=*/ 500);
 }
 
 function sensitizeControls() {
@@ -345,9 +353,27 @@ function sensitizeControls() {
 
   $('aligned-name').value = deviceState.name;
 
-  var all = document.getElementsByClassName('last-saved');
-  for (var i = 0; i < all.length; i++) {
-    all[i].style.visibility = isPortOpen() ? 'hidden' : 'visible';
+  var all = document.getElementsByClassName('value-info');
+  if (deviceUpdated) {
+    // UI values reflect state of device.
+    for (const element of all) {
+      element.style.visibility = 'hidden';
+    }
+  } else {
+    for (const element of all) {
+      element.style.visibility = 'visible';
+    }
+    if (createdDatabase) {
+      // UI values are defaults.
+      for (const element of all) {
+        element.innerText = '(default value)';
+      }
+    } else {
+      // UI values are last saved.
+      for (const element of all) {
+        element.innerText = '(last written value)';
+      }
+    }
   }
 }
 
