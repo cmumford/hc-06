@@ -11,28 +11,53 @@
 </head>
 
 <body>
-  <h1>HC-06 Configuration Notes</h1>
-  <p>
-    To configure this device it must be connected (via a <b>wired</b> serial
-    port) to the computer running this browser. Bluetooth must be
-    disconnected.
-  <p>
-    <b>Note: </b> The HC-06 may be Bluetooth paired with a device, just
-    not connected.
-  </p>
+  <h1>HC-06 Configurator</h1>
 
-  <img id="connection_img" src="img/connection.png" alt="connection illustration">
+  <div id="layout">
+    <div style="display: block;">
+      <p>
+        This is a configuration program for the
+        <a href="http://www.dsdtech-global.com/search/label/HC-06">
+          DSD TECH HC-06 Bluetooth module</a>.
+      </p>
 
-  <p>
-    The HC-06 does not support querying parameters. Because of this this
-    application will remember the values of the last device to which it
-    connected.
-  </p>
+      <div id="layout" class="pure-g">
+        <div class="content pure-u-1 pure-u-md-3-4">
+          <div>
+            <div id="connect-banner" class="disconnected">
+              <a href="index.html">
+                <button class="pure-button pure-button-primary">Connect Page</button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <p>
-    The default BAUD rate is 9600. If you cannot connect, try connecting first
-    at 9600, and then at other speeds.
-  </p>
+    <div>
+      <p>
+        To configure your device it must be connected (<b>via a <u>wired</u> serial
+          port</b>) to the computer running this browser. Bluetooth must be
+        disconnected.
+      <p>
+        <b>Note: </b> The HC-06 may be Bluetooth paired with a device, just
+        not connected.
+      </p>
+
+      <img id="connection_img" src="img/connection.png" alt="connection illustration">
+
+      <p>
+        The HC-06 does not support querying parameters. Because of this this
+        application will remember the values of the last device to which it
+        connected.
+      </p>
+
+      <p>
+        The default BAUD rate is 9600. If you cannot connect, try connecting first
+        at 9600, and then at other speeds.
+      </p>
+    </div>
+  </div>
 </body>
 
 </html>

@@ -40,4 +40,9 @@
 
 #connect-banner {
   padding: 10px;
+  margin-bottom: 20px;
+}
+
+.alignright {
+  text-align: right;
 }

@@ -239,7 +239,6 @@ async function init() {
   navigator.serial.addEventListener('connect', onConnect);
   navigator.serial.addEventListener('disconnect', onDisconnect);
 
-  logInfo('Loading device state');
   loadSavedDeviceState();
 }
 
