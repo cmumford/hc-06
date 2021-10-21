@@ -352,6 +352,11 @@ function getMenuValues() {
   }
 }
 
+async function haveSavedPorts() {
+  const ports = await navigator.serial.getPorts();
+  return ports.length > 0;
+}
+
 async function populatePortMenu() {
   const portMenu = $('connection-port');
   var i, L = portMenu.options.length - 1;
@@ -359,8 +364,11 @@ async function populatePortMenu() {
     portMenu.remove(i);
   }
 
-  var option;
   const ports = await navigator.serial.getPorts();
+  if (ports.length == 0) {
+    return;
+  }
+  var option;
   ports.forEach(port => {
     console.log(port);
     option = document.createElement('option');
@@ -430,7 +438,7 @@ function setPortBannerState(openError) {
   }
 }
 
-function sensitizeControls() {
+async function sensitizeControls() {
   $('aligned-name').disabled = !isPortConnected();
   $('aligned-pin').disabled = !isPortConnected();
   $('aligned-role').disabled = !isPortConnected();
@@ -440,6 +448,12 @@ function sensitizeControls() {
   $('aligned-name').value = deviceState.name;
   $('aligned-pin').value = deviceState.pin;
 
+  const haveSaved = await haveSavedPorts();
+  if (haveSaved && !isPortConnected()) {
+    $('connection-port-form').style.visibility = 'visible';
+  } else {
+    $('connection-port-form').style.visibility = 'hidden';
+  }
   var all = document.getElementsByClassName('value-info');
   if (deviceUpdated) {
     // UI values reflect state of device.
