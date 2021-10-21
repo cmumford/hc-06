@@ -29,7 +29,17 @@
             <div class="pure-g">
               <div class="pure-u-1-4"><button class="pure-button pure-button-primary" id="toggle-connect"
                   onclick="toggleConnectState()">Connect</button></div>
-              <div id="connect-info" class="pure-u-3-4 alignright">
+              <div class="pure-u-1-4">
+                <form class="pure-form pure-form-aligned">
+                  <fieldset>
+                    <label for="connection-port">Port</label>
+                    <select class="pure-input-medium" id="connection-port" name="port" onchange="onPortSelected(this)">
+                      <option value="new" selected>New</option>
+                    </select>
+                  </fieldset>
+                </form>
+              </div>
+              <div id="connect-info" class="pure-u-1-2 alignright">
                 Trouble connecting?<br>See: <a href="connection.html">connection notes</a>
               </div>
             </div>

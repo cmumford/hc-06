@@ -6,6 +6,8 @@ var deviceState = {
   mode: 'master'   // 'master' or 'slave'.
 };
 var port;
+var usbProductId = null;
+var usbVendorId = null;
 var isConnected = false;
 var isOpen = false;
 var deviceStateDb;
@@ -238,9 +240,16 @@ async function reopenPort() {
 
 async function connectToPort() {
   try {
+    const ports = await navigator.serial.getPorts();
+    console.log(ports);
+
     port = await navigator.serial.requestPort();
+    const portInfo = await port.getInfo();
+    usbProductId = portInfo.usbProductId;
+    usbVendorId = portInfo.usbVendorId;
     await openPort();
     await ping();
+    populatePortMenu();
   } catch (e) {
     setPortBannerState(/*openError=*/ true);
   }
@@ -294,6 +303,7 @@ async function init() {
   navigator.serial.addEventListener('disconnect', onDisconnect);
 
   loadSavedDeviceState();
+  populatePortMenu();
 }
 
 async function onBaudSelected(selectObject) {
@@ -325,6 +335,10 @@ async function onRoleSelected(selectObject) {
   }
 }
 
+function onPortSelected(selectedObject) {
+  logInfo('Selected a port.');
+}
+
 function getMenuValues() {
   for (const option of $('aligned-parity').options) {
     parityAbbrevToName[option.value] = option.innerText;
@@ -336,6 +350,28 @@ function getMenuValues() {
     const speed = option.innerText.replaceAll(',', '');
     baudAbbrevToName[option.value] = speed;
   }
+}
+
+async function populatePortMenu() {
+  const portMenu = $('connection-port');
+  var i, L = portMenu.options.length - 1;
+  for (i = L; i >= 0; i--) {
+    portMenu.remove(i);
+  }
+
+  var option;
+  const ports = await navigator.serial.getPorts();
+  ports.forEach(port => {
+    console.log(port);
+    option = document.createElement('option');
+    const portInfo = port.getInfo();
+    option.text = `${portInfo.usbVendorId}/${portInfo.usbProductId}`;
+    portMenu.add(option);
+  });
+
+  option = document.createElement('option');
+  option.text = 'New';
+  portMenu.add(option);
 }
 
 function changeNameCallback() {
