@@ -157,6 +157,16 @@ async function setDeviceName(name) {
   putDbData(deviceStateDb);
 }
 
+async function setPinName(pin) {
+  if (pin.length != 4) {
+    throw Error('PIN length must be 4 characters');
+  }
+  logInfo(`Setting PIN to "${PIN}"`)
+  const response = await sendAtCommand(`+PIN${pin}`);
+  deviceState.pin = pin;
+  putDbData(deviceStateDb);
+}
+
 async function ping() {
   const response = await sendAtCommand();
   logInfo(`Ping response: "${response}"`);
@@ -344,6 +354,23 @@ function startNameChangeTimer(element) {
     window.setTimeout(changeNameCallback, /*milliseconds=*/ 500);
 }
 
+function changePinCallback() {
+  pinChangeTimer = undefined;
+
+  const pin = $('aligned-pin').value;
+  logInfo(`Setting PIN to "${pin}"`);
+  setDevicePin(pin);
+}
+
+function startPinChangeTimer(element) {
+  if (pinChangeTimer) {
+    window.clearTimeout(pinChangeTimer);
+    pinChangeTimer = undefined;
+  }
+  pinChangeTimer =
+    window.setTimeout(changePinCallback, /*milliseconds=*/ 500);
+}
+
 function setPortBannerState(openError) {
   var toggleConnect = $('toggle-connect');
   var connectBanner = $('connect-banner');
@@ -369,10 +396,12 @@ function setPortBannerState(openError) {
 
 function sensitizeControls() {
   $('aligned-name').disabled = !isPortConnected();
+  $('aligned-pin').disabled = !isPortConnected();
 
   setPortBannerState(/*openError=*/false);
 
   $('aligned-name').value = deviceState.name;
+  $('aligned-pin').value = deviceState.pin;
 
   var all = document.getElementsByClassName('value-info');
   if (deviceUpdated) {
