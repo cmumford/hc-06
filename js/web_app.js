@@ -200,9 +200,13 @@ async function reopenPort() {
 }
 
 async function connectToPort() {
-  port = await navigator.serial.requestPort();
-  await openPort();
-  await ping();
+  try {
+    port = await navigator.serial.requestPort();
+    await openPort();
+    await ping();
+  } catch (e) {
+    setPortBannerState(/*openError=*/true);
+  }
 }
 
 function toggleConnectState() {
@@ -216,7 +220,10 @@ function toggleConnectState() {
 async function readState() {
   try {
     await connectToPort();
-    sendAtCommand('');
+    if (isPortConnected())
+      await sendAtCommand('');
+    else
+      logInfo('Did not connect');
   } catch (error) {
     logError(`Unexpected failure: ${error}`);
   }
@@ -337,19 +344,33 @@ function startNameChangeTimer(element) {
     window.setTimeout(changeNameCallback, /*milliseconds=*/ 500);
 }
 
-function sensitizeControls() {
-  $('aligned-name').disabled = !isPortConnected();
+function setPortBannerState(openError) {
   var toggleConnect = $('toggle-connect');
   var connectBanner = $('connect-banner');
   if (isPortOpen()) {
     toggleConnect.innerText = 'Disconnect';
-    connectBanner.classList.add('connected');
     connectBanner.classList.remove('disconnected');
+    connectBanner.classList.remove('connect-error');
+    connectBanner.classList.add('connected');
+    $('connect-info').style.visibility = 'hidden';
   } else {
     toggleConnect.innerText = 'Connect';
-    connectBanner.classList.add('disconnected');
     connectBanner.classList.remove('connected');
+    if (openError) {
+      connectBanner.classList.add('connect-error');
+      connectBanner.classList.remove('disconnected');
+    } else {
+      connectBanner.classList.remove('connect-error');
+      connectBanner.classList.add('disconnected');
+    }
+    $('connect-info').style.visibility = 'visible';
   }
+}
+
+function sensitizeControls() {
+  $('aligned-name').disabled = !isPortConnected();
+
+  setPortBannerState(/*openError=*/false);
 
   $('aligned-name').value = deviceState.name;
 

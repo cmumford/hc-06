@@ -38,6 +38,21 @@
   background-color: rgb(75, 75, 75);
 }
 
+.connect-error {
+  background-color: rgb(255, 174, 174);
+  transition-property: background-color;
+  transition-duration: 0.5s;
+  color: black;
+}
+
+.connect-error a {
+  color: #003c9c;
+}
+
+.connect-error a:visited {
+  color: #5f007c;
+}
+
 #connect-banner {
   padding: 10px;
   margin-bottom: 20px;
