@@ -39,7 +39,7 @@
               <div class="pure-control-group">
                 <label for="aligned-name">Device Name</label>
                 <input type="text" id="aligned-name" maxlength="20" alt="The advertized Bluetooth device name"
-                  placeholder="Device name" onkeydown="startNameChangeTimer(this)" />
+                  placeholder="Device name" onkeydown="onNameChanged(this)" />
                 <span class="pure-form-message-inline value-info">(Last seen value)</span>
               </div>
               <div class="pure-control-group">
@@ -50,7 +50,7 @@
               </div>
               <div class="pure-control-group">
                 <label for="aligned-baud">Baud</label>
-                <select class="pure-input-medium" id="aligned-baud" name="baud" onchange="baudSelected(this)">
+                <select class="pure-input-medium" id="aligned-baud" name="baud" onchange="onBaudSelected(this)">
                   <option value="1">1,200</option>
                   <option value="2">2,400</option>
                   <option value="3">4,800</option>
@@ -68,10 +68,18 @@
               </div>
               <div class="pure-control-group">
                 <label for="aligned-parity">Parity</label>
-                <select class="pure-input-medium" id="aligned-parity" name="parity" onchange="paritySelected(this)">
+                <select class="pure-input-medium" id="aligned-parity" name="parity" onchange="onParitySelected(this)">
                   <option value="PN" selected>none</option>
                   <option value="PO">odd</option>
                   <option value="PE">even</option>
+                </select>
+                <span class="pure-form-message-inline value-info">(Last seen value)</span>
+              </div>
+              <div class="pure-control-group">
+                <label for="aligned-role">Role</label>
+                <select class="pure-input-medium" id="aligned-role" name="role" onchange="onRoleSelected(this)">
+                  <option value="M" selected>master</option>
+                  <option value="S">slave</option>
                 </select>
                 <span class="pure-form-message-inline value-info">(Last seen value)</span>
               </div>

@@ -10,17 +10,28 @@ var isConnected = false;
 var isOpen = false;
 var deviceStateDb;
 var createdDatabase = false; // There was no settings db at page load and was created.
-var deviceUpdated = false;  // The settings were written (at least once) to device.
+var deviceUpdated = false;   // The settings were written (at least once) to device.
 var nameChangeTimer;
 const kDbName = 'HC-06';
 const kDbVersion = 1;
 const kDbObjStoreName = 'state';
 const kDbPrimaryKeyName = 'id';
 const kDbPrimaryKeyValue = 1;
-const parityValues = {};
+const parityAbbrevToName = {}; // Abbrev ("PO", etc.) to name ("odd", etc.).
+const roleAbbrevToName = {};   // Abbrev ("M", "S") to name ("master", "slave");
 
 function $(id) {
   return document.getElementById(id);
+}
+
+function dictReverseLookup(dict, value) {
+  foundValue = undefined;
+  Object.entries(dict).forEach(([k, v]) => {
+    if (value == v) {
+      foundValue = k;
+    }
+  });
+  return foundValue;
 }
 
 function logStatus(msg) {
@@ -151,6 +162,12 @@ async function setPortBaud(baudValue) {
 // Set the parity to the parity abbreviation (PN, PO, PE).
 async function setParity(parityAbbrev) {
   const response = await sendAtCommand(`+${parityAbbrev}`);
+  putDbData(deviceStateDb);
+}
+
+// Set the role to the role abbreviation ("M" or "S").
+async function setRole(role) {
+  const response = await sendAtCommand(`+ROLE=${role}`);
   putDbData(deviceStateDb);
 }
 
@@ -336,7 +353,7 @@ function baudValueToRate(value) {
   }
 }
 
-async function baudSelected(selectObject) {
+async function onBaudSelected(selectObject) {
   const value = selectObject.value;
   deviceState.baudRate = baudValueToRate(value);
   logInfo(`Selected ${value} = ${deviceState.baudRate}`);
@@ -346,35 +363,31 @@ async function baudSelected(selectObject) {
   }
 }
 
-// Abbrev ("PO", etc.) to name ("odd", etc.).
-function parityAbbrevToName(key) {
-  return parityValues[key];
-}
-
-// Name ("odd", etc.) to abbrev ("PO", etc.).
-function parityNameToAbbrev(value) {
-  foundValue = undefined;
-  Object.entries(parityValues).forEach(([k, v]) => {
-    if (value == v) {
-      foundValue = k;
-    }
-  });
-  return foundValue;
-}
-
-async function paritySelected(selectObject) {
-  const value = selectObject.value;
-  deviceState.parity = parityAbbrevToName(value);
-  logInfo(`Selected ${value} = ${deviceState.parity}`);
+async function onParitySelected(selectObject) {
+  const abbrev = selectObject.value;
+  deviceState.parity = parityAbbrevToName[abbrev];
+  logInfo(`Selected ${abbrev} = ${deviceState.parity}`);
   if (isPortConnected()) {
-    await setParity(value);
+    await setParity(abbrev);
     await reopenPort();
+  }
+}
+
+async function onRoleSelected(selectObject) {
+  const abbrev = selectObject.value;
+  deviceState.mode = roleAbbrevToName[abbrev];
+  logInfo(`Selected ${abbrev} = ${deviceState.mode}`);
+  if (isPortConnected()) {
+    await setRole(abbrev);
   }
 }
 
 function getMenuValues() {
   for (const option of $('aligned-parity').options) {
-    parityValues[option.value] = option.innerText;
+    parityAbbrevToName[option.value] = option.innerText;
+  }
+  for (const option of $('aligned-role').options) {
+    roleAbbrevToName[option.value] = option.innerText;
   }
 }
 
@@ -386,7 +399,7 @@ function changeNameCallback() {
   setDeviceName(name);
 }
 
-function startNameChangeTimer(element) {
+function onNameChanged(element) {
   if (nameChangeTimer) {
     window.clearTimeout(nameChangeTimer);
     nameChangeTimer = undefined;
@@ -438,6 +451,7 @@ function setPortBannerState(openError) {
 function sensitizeControls() {
   $('aligned-name').disabled = !isPortConnected();
   $('aligned-pin').disabled = !isPortConnected();
+  $('aligned-role').disabled = !isPortConnected();
 
   setPortBannerState(/*openError=*/false);
 
