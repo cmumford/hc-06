@@ -5,10 +5,6 @@
     color: lightgray;
   }
 
-  .pass {
-    color: lightgreen;
-  }
-
   a {
     color: #8AB4F8;
   }
@@ -55,6 +51,18 @@
   transition-property: background-color;
   transition-duration: 0.5s;
   color: black;
+}
+
+#connect-info {
+  color: rgb(216, 216, 216);
+}
+
+#connect-info a {
+  color: rgb(164, 184, 250);
+}
+
+#connect-info a:visited {
+  color: rgb(230, 164, 250);
 }
 
 .connect-error a {
