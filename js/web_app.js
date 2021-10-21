@@ -17,6 +17,7 @@ const kDbVersion = 1;
 const kDbObjStoreName = 'state';
 const kDbPrimaryKeyName = 'id';
 const kDbPrimaryKeyValue = 1;
+const parityValues = {};
 
 function $(id) {
   return document.getElementById(id);
@@ -147,6 +148,12 @@ async function setPortBaud(baudValue) {
   putDbData(deviceStateDb);
 }
 
+// Set the parity to the parity abbreviation (PN, PO, PE).
+async function setParity(parityAbbrev) {
+  const response = await sendAtCommand(`+${parityAbbrev}`);
+  putDbData(deviceStateDb);
+}
+
 async function setDeviceName(name) {
   if (name.length > 20) {
     throw Error('Name too long: 20 chars max');
@@ -240,6 +247,8 @@ async function readState() {
 }
 
 async function init() {
+  getMenuValues();
+
   if (!isWebSerialSupported()) {
     console.log('Web Serial not supported.');
     $('web_serial_available').style.display = 'none';
@@ -334,6 +343,38 @@ async function baudSelected(selectObject) {
   if (isPortConnected()) {
     await setPortBaud(value);
     await reopenPort();
+  }
+}
+
+// Abbrev ("PO", etc.) to name ("odd", etc.).
+function parityAbbrevToName(key) {
+  return parityValues[key];
+}
+
+// Name ("odd", etc.) to abbrev ("PO", etc.).
+function parityNameToAbbrev(value) {
+  foundValue = undefined;
+  Object.entries(parityValues).forEach(([k, v]) => {
+    if (value == v) {
+      foundValue = k;
+    }
+  });
+  return foundValue;
+}
+
+async function paritySelected(selectObject) {
+  const value = selectObject.value;
+  deviceState.parity = parityAbbrevToName(value);
+  logInfo(`Selected ${value} = ${deviceState.parity}`);
+  if (isPortConnected()) {
+    await setParity(value);
+    await reopenPort();
+  }
+}
+
+function getMenuValues() {
+  for (const option of $('aligned-parity').options) {
+    parityValues[option.value] = option.innerText;
   }
 }
 

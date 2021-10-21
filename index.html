@@ -49,7 +49,7 @@
                 <span class="pure-form-message-inline value-info">(Last seen value)</span>
               </div>
               <div class="pure-control-group">
-                <label for="aligned-name">Baud</label>
+                <label for="aligned-baud">Baud</label>
                 <select class="pure-input-medium" id="aligned-baud" name="baud" onchange="baudSelected(this)">
                   <option value="1">1,200</option>
                   <option value="2">2,400</option>
@@ -63,6 +63,15 @@
                   <option value="A">460,800</option>
                   <option value="B">921,600</option>
                   <option value="C">1,382,400</option>
+                </select>
+                <span class="pure-form-message-inline value-info">(Last seen value)</span>
+              </div>
+              <div class="pure-control-group">
+                <label for="aligned-parity">Parity</label>
+                <select class="pure-input-medium" id="aligned-parity" name="parity" onchange="paritySelected(this)">
+                  <option value="PN" selected>none</option>
+                  <option value="PO">odd</option>
+                  <option value="PE">even</option>
                 </select>
                 <span class="pure-form-message-inline value-info">(Last seen value)</span>
               </div>
