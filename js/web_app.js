@@ -7,7 +7,7 @@ var deviceState = {
 };
 var port;
 var isConnected = false;
-var isOpen = false;
+var isOpen = false; // Is the port currently open?
 var deviceStateDb;
 var createdDatabase = false; // There was no settings db at page load and was created.
 var deviceUpdated = false;   // The settings were written (at least once) to device.
@@ -17,13 +17,21 @@ const kDbVersion = 1;
 const kDbObjStoreName = 'state';
 const kDbPrimaryKeyName = 'id';
 const kDbPrimaryKeyValue = 1;
-const parityAbbrevToName = {}; // Abbrev ("PO", etc.) to name ("odd", etc.).
-const roleAbbrevToName = {};   // Abbrev ("M", "S") to name ("master", "slave");
+const parityAbbrevToName = {};  // Abbrev ("PO", etc.) to name ("odd", etc.).
+const roleAbbrevToName = {};  // Abbrev ("M", "S") to name ("master", "slave");
+const baudAbbrevToName = {};  // Abbrev ("1", "2") to name ("1200", "2400");
 
 function $(id) {
   return document.getElementById(id);
 }
 
+/**
+ * Given a dictionary value return the corresponding key.
+ *
+ * @param {dict} dict
+ * @param {*} value
+ * @returns The key corresponding to |value| or undefined.
+ */
 function dictReverseLookup(dict, value) {
   foundValue = undefined;
   Object.entries(dict).forEach(([k, v]) => {
@@ -52,11 +60,18 @@ function logError(msg) {
   console.error(msg);
 }
 
+/**
+ * Is the Web Serial API supported by this browser?
+ *
+ * @returns {bool} true/false
+ */
 function isWebSerialSupported() {
   return 'serial' in navigator;
 }
 
-// Write the current device state to the database.
+/**
+ * Write the current device state to the database.
+ */
 function getDbData(db) {
   var transaction = db.transaction([kDbObjStoreName], 'readwrite');
   transaction.oncomplete = (event) => {
@@ -73,16 +88,18 @@ function getDbData(db) {
   };
 }
 
-// Read the current device state from the database.
+/**
+ * Read the current device state from the database.
+ */
 function putDbData(db) {
   var transaction = db.transaction([kDbObjStoreName], 'readwrite');
-  transaction.oncomplete = (event) => { };
+  transaction.oncomplete = (event) => {};
   transaction.onerror = (event) => {
     logError(`Put transaction error: ${event.target.errorCode}`);
   };
   var store = transaction.objectStore(kDbObjStoreName);
   var request = store.put(deviceState, kDbPrimaryKeyValue);
-  request.onsuccess = (event) => { };
+  request.onsuccess = (event) => {};
 }
 
 // Open the device state database and read the saved device state.
@@ -106,14 +123,29 @@ function loadSavedDeviceState() {
   };
 }
 
+/**
+ * Is a serial port currently open?
+ *
+ * @returns true/false.
+ */
 function isPortOpen() {
   return isOpen;
 }
 
+/**
+ * Is the serial port both open **and** connected?
+ *
+ * @returns true/false.
+ */
 function isPortConnected() {
   return isConnected;
 }
 
+/**
+ * Event handler for serial port connection.
+ *
+ * @param {*} event (unused)
+ */
 function onConnect(event) {
   logInfo('Connected to serial port.');
   isConnected = true;
@@ -121,6 +153,11 @@ function onConnect(event) {
   sensitizeControls();
 }
 
+/**
+ * Event handler for serial port disconnection.
+ *
+ * @param {*} event (unused)
+ */
 function onDisconnect(event) {
   logInfo('Disconnected from serial port.');
   isConnected = false;
@@ -139,7 +176,7 @@ async function sendAtCommand(payload) {
 
   // Read response.
   reader = port.readable.getReader();
-  const { value, done } = await reader.read();
+  const {value, done} = await reader.read();
   reader.releaseLock();
   if (done) {
     logInfo('Port is closed');
@@ -159,13 +196,21 @@ async function setPortBaud(baudValue) {
   putDbData(deviceStateDb);
 }
 
-// Set the parity to the parity abbreviation (PN, PO, PE).
-async function setParity(parityAbbrev) {
-  const response = await sendAtCommand(`+${parityAbbrev}`);
+/**
+ * Set the device parity and update the database.
+ *
+ * @param {string} parity One of "PN" (none), "PO" (odd), or "PE" (even).
+ */
+async function setParity(parity) {
+  const response = await sendAtCommand(`+${parity}`);
   putDbData(deviceStateDb);
 }
 
-// Set the role to the role abbreviation ("M" or "S").
+/**
+ * Set the device role and update the database.
+ *
+ * @param {string} role The role. Either "M" (master) or "S" (slave).
+ */
 async function setRole(role) {
   const response = await sendAtCommand(`+ROLE=${role}`);
   putDbData(deviceStateDb);
@@ -196,6 +241,9 @@ async function ping() {
   logInfo(`Ping response: "${response}"`);
 }
 
+/**
+ * Close the serial port.
+ */
 async function closePort() {
   try {
     isConnected = false;
@@ -207,6 +255,9 @@ async function closePort() {
   }
 }
 
+/**
+ * Open the serial port.
+ */
 async function openPort() {
   logInfo(`Opening port baud: ${deviceState.baudRate}`);
   try {
@@ -226,6 +277,9 @@ async function openPort() {
   }
 }
 
+/**
+ * Close (if currently open) and open the serial port.
+ */
 async function reopenPort() {
   if (isPortOpen()) {
     await closePort();
@@ -243,26 +297,24 @@ async function connectToPort() {
   }
 }
 
-function toggleConnectState() {
+/**
+ * Toggle the open state of the currently selected serial port.
+ */
+async function toggleConnectState() {
   if (isPortConnected()) {
     closePort();
   } else {
-    readState();
-  }
-}
-
-async function readState() {
-  try {
     await connectToPort();
     if (isPortConnected())
       await sendAtCommand('');
     else
       logInfo('Did not connect');
-  } catch (error) {
-    logError(`Unexpected failure: ${error}`);
   }
 }
 
+/**
+ * One time page initialization.
+ */
 async function init() {
   getMenuValues();
 
@@ -293,69 +345,9 @@ async function init() {
   loadSavedDeviceState();
 }
 
-function baudRateToValue(rate) {
-  switch (rate) {
-    case 1200:
-      return '1';
-    case 2400:
-      return '2';
-    case 4800:
-      return '3';
-    case 9600:
-      return '4';
-    case 19200:
-      return '5';
-    case 38400:
-      return '6';
-    case 57600:
-      return '7';
-    case 115200:
-      return '8';
-    case 230400:
-      return '9';
-    case 460800:
-      return 'A';
-    case 921600:
-      return 'B';
-    case 1382400:
-      return 'C';
-    default:
-      return '4';
-  }
-}
-
-function baudValueToRate(value) {
-  switch (value) {
-    case '1':
-      return 1200;
-    case '2':
-      return 2400;
-    case '3':
-      return 4800;
-    case '4':
-      return 9600;
-    case '5':
-      return 19200;
-    case '6':
-      return 38400;
-    case '7':
-      return 57600;
-    case '8':
-      return 115200;
-    case '9':
-      return 230400;
-    case 'A':
-      return 460800;
-    case 'B':
-      return 921600;
-    case 'C':
-      return 1382400;
-  }
-}
-
 async function onBaudSelected(selectObject) {
   const value = selectObject.value;
-  deviceState.baudRate = baudValueToRate(value);
+  deviceState.baudRate = baudAbbrevToName[value];
   logInfo(`Selected ${value} = ${deviceState.baudRate}`);
   if (isPortConnected()) {
     await setPortBaud(value);
@@ -388,6 +380,10 @@ function getMenuValues() {
   }
   for (const option of $('aligned-role').options) {
     roleAbbrevToName[option.value] = option.innerText;
+  }
+  for (const option of $('aligned-baud').options) {
+    const speed = option.innerText.replaceAll(',', '');
+    baudAbbrevToName[option.value] = speed;
   }
 }
 
@@ -483,7 +479,8 @@ function sensitizeControls() {
 }
 
 function setControlValues() {
-  const value = parseInt(baudRateToValue(deviceState.baudRate), 16);
+  const value =
+      parseInt(dictReverseLookup(baudAbbrevToName, deviceState.baudRate), 16);
   const index = value - 1;
   $('aligned-baud').selectedIndex = index;
 }
