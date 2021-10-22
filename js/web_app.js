@@ -240,9 +240,6 @@ async function reopenPort() {
 
 async function connectToPort() {
   try {
-    const ports = await navigator.serial.getPorts();
-    console.log(ports);
-
     port = await navigator.serial.requestPort();
     const portInfo = await port.getInfo();
     usbProductId = portInfo.usbProductId;
@@ -352,11 +349,6 @@ function getMenuValues() {
   }
 }
 
-async function haveSavedPorts() {
-  const ports = await navigator.serial.getPorts();
-  return ports.length > 0;
-}
-
 async function populatePortMenu() {
   const portMenu = $('connection-port');
   var i, L = portMenu.options.length - 1;
@@ -448,11 +440,11 @@ async function sensitizeControls() {
   $('aligned-name').value = deviceState.name;
   $('aligned-pin').value = deviceState.pin;
 
-  const haveSaved = await haveSavedPorts();
-  if (haveSaved && !isPortConnected()) {
-    $('connection-port-form').style.visibility = 'visible';
+  const ports = await navigator.serial.getPorts();
+  if (ports.length > 0 && !isPortConnected()) {
+    $('connection-port-div').style.visibility = 'visible';
   } else {
-    $('connection-port-form').style.visibility = 'hidden';
+    $('connection-port-div').style.visibility = 'hidden';
   }
   var all = document.getElementsByClassName('value-info');
   if (deviceUpdated) {
