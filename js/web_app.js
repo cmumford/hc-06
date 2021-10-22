@@ -93,13 +93,13 @@ function getDbData(db) {
  */
 function putDbData(db) {
   var transaction = db.transaction([kDbObjStoreName], 'readwrite');
-  transaction.oncomplete = (event) => {};
+  transaction.oncomplete = (event) => { };
   transaction.onerror = (event) => {
     logError(`Put transaction error: ${event.target.errorCode}`);
   };
   var store = transaction.objectStore(kDbObjStoreName);
   var request = store.put(deviceState, kDbPrimaryKeyValue);
-  request.onsuccess = (event) => {};
+  request.onsuccess = (event) => { };
 }
 
 // Open the device state database and read the saved device state.
@@ -176,7 +176,7 @@ async function sendAtCommand(payload) {
 
   // Read response.
   reader = port.readable.getReader();
-  const {value, done} = await reader.read();
+  const { value, done } = await reader.read();
   reader.releaseLock();
   if (done) {
     logInfo('Port is closed');
@@ -243,6 +243,8 @@ async function ping() {
 
 /**
  * Close the serial port.
+ *
+ * @return {Promise<undefined>} A promise that resolves when the port closes.
  */
 async function closePort() {
   try {
@@ -257,6 +259,8 @@ async function closePort() {
 
 /**
  * Open the serial port.
+ *
+ * @return {Promise<undefined>} A promise that resolves when the port opens.
  */
 async function openPort() {
   logInfo(`Opening port baud: ${deviceState.baudRate}`);
@@ -279,6 +283,8 @@ async function openPort() {
 
 /**
  * Close (if currently open) and open the serial port.
+ *
+ * @return {Promise<undefined>} A promise that resolves when the port opens.
  */
 async function reopenPort() {
   if (isPortOpen()) {
@@ -291,7 +297,6 @@ async function connectToPort() {
   try {
     port = await navigator.serial.requestPort();
     await openPort();
-    await ping();
   } catch (e) {
     setPortBannerState(/*openError=*/true);
   }
@@ -304,11 +309,12 @@ async function toggleConnectState() {
   if (isPortConnected()) {
     closePort();
   } else {
-    await connectToPort();
-    if (isPortConnected())
-      await sendAtCommand('');
-    else
-      logInfo('Did not connect');
+    try {
+      await connectToPort();
+      await ping();
+    } catch (ex) {
+      logError('Unable to connect to serial port: ' + ex);
+    }
   }
 }
 
@@ -345,6 +351,11 @@ async function init() {
   loadSavedDeviceState();
 }
 
+/**
+ * Callback when device baud is selected.
+ *
+ * @param {*} selectObject The HTML select object.
+ */
 async function onBaudSelected(selectObject) {
   const value = selectObject.value;
   deviceState.baudRate = baudAbbrevToName[value];
@@ -480,7 +491,7 @@ function sensitizeControls() {
 
 function setControlValues() {
   const value =
-      parseInt(dictReverseLookup(baudAbbrevToName, deviceState.baudRate), 16);
+    parseInt(dictReverseLookup(baudAbbrevToName, deviceState.baudRate), 16);
   const index = value - 1;
   $('aligned-baud').selectedIndex = index;
 }
