@@ -42,10 +42,26 @@ function dictReverseLookup(dict, value) {
   return foundValue;
 }
 
+/**
+ * Append status message to UI section.
+ * @param {string} msg The status message.
+ */
 function logStatus(msg) {
   const status = $('status');
   const br = document.createElement('br');
   const text = document.createTextNode(msg);
+  status.appendChild(br);
+  status.appendChild(text);
+}
+
+/**
+ * Append device response to UI section.
+ * @param {string} response The device response to log.
+ */
+function logResponse(response) {
+  const status = $('response');
+  const br = document.createElement('br');
+  const text = document.createTextNode(response);
   status.appendChild(br);
   status.appendChild(text);
 }
@@ -144,7 +160,7 @@ function isPortConnected() {
 /**
  * Event handler for serial port connection.
  *
- * @param {*} event (unused)
+ * @param {Event} event (unused)
  */
 function onConnect(event) {
   logInfo('Connected to serial port.');
@@ -156,7 +172,7 @@ function onConnect(event) {
 /**
  * Event handler for serial port disconnection.
  *
- * @param {*} event (unused)
+ * @param {Event} event (unused)
  */
 function onDisconnect(event) {
   logInfo('Disconnected from serial port.');
@@ -165,6 +181,12 @@ function onDisconnect(event) {
   setControlState();
 }
 
+/**
+ * Send an AT command.
+ *
+ * @param {string} payload The AT command payload. Can be empty.
+ * @returns
+ */
 async function sendAtCommand(payload) {
   if (!isPortConnected()) {
     throw Error('Port not connected.');
@@ -238,7 +260,7 @@ async function setPinName(pin) {
 
 async function ping() {
   const response = await sendAtCommand();
-  logInfo(`Ping response: "${response}"`);
+  logResponse(`Ping response: "${response}"`);
 }
 
 /**
