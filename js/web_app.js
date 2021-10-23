@@ -47,18 +47,6 @@ function dictReverseLookup(dict, value) {
 }
 
 /**
- * Append status message to UI section.
- * @param {string} msg The status message.
- */
-function logStatus(msg) {
-  const status = $('status');
-  const br = document.createElement('br');
-  const text = document.createTextNode(msg);
-  status.appendChild(br);
-  status.appendChild(text);
-}
-
-/**
  * Append device response to UI section.
  * @param {string} response The device response to log.
  */
@@ -92,16 +80,6 @@ function logResponseData(data) {
   }
 }
 
-function logInfo(msg) {
-  logStatus(msg);
-  console.log(msg);
-}
-
-function logError(msg) {
-  logStatus(msg);
-  console.error(msg);
-}
-
 /**
  * Is the Web Serial API supported by this browser?
  *
@@ -120,7 +98,7 @@ function getDbData(db) {
     setControlValues();
   };
   transaction.onerror = (event) => {
-    logError(`Get transaction error: ${event.target.errorCode}`);
+    console.error(`Get transaction error: ${event.target.errorCode}`);
   };
   var store = transaction.objectStore(kDbObjStoreName);
   var request = store.get(kDbPrimaryKeyValue);
@@ -137,7 +115,7 @@ function putDbData(db) {
   var transaction = db.transaction([kDbObjStoreName], 'readwrite');
   transaction.oncomplete = (event) => { };
   transaction.onerror = (event) => {
-    logError(`Put transaction error: ${event.target.errorCode}`);
+    console.error(`Put transaction error: ${event.target.errorCode}`);
   };
   var store = transaction.objectStore(kDbObjStoreName);
   var request = store.put(deviceState, kDbPrimaryKeyValue);
@@ -148,14 +126,14 @@ function putDbData(db) {
 function loadSavedDeviceState() {
   var dbOpenRequest = window.indexedDB.open(kDbName, kDbVersion);
   dbOpenRequest.onerror = (event) => {
-    logError(`Error opening device db, err: ${event.target.errorCode}`);
+    console.error(`Error opening device db, err: ${event.target.errorCode}`);
   };
   dbOpenRequest.onsuccess = async (event) => {
     deviceStateDb = event.target.result;
     getDbData(event.target.result);
   };
   dbOpenRequest.onupgradeneeded = (event) => {
-    logInfo('Created device state database.');
+    console.log('Created device state database.');
     createdDatabase = true;
     var db = event.target.result;
     var objectStore = db.createObjectStore(kDbObjStoreName);
@@ -180,7 +158,7 @@ function isPortOpen() {
  * @param {Event} event (unused)
  */
 function onConnect(event) {
-  logInfo('A serial port has been connected.');
+  console.log('A serial port has been connected.');
   setControlState();
 }
 
@@ -190,7 +168,7 @@ function onConnect(event) {
  * @param {Event} event (unused)
  */
 function onDisconnect(event) {
-  logInfo('A serial port has been disconnected.');
+  console.log('A serial port has been disconnected.');
   setControlState();
 }
 
@@ -245,7 +223,7 @@ async function setDeviceName(name) {
   if (name.length > 20) {
     throw Error('Name too long: 20 chars max');
   }
-  logInfo(`Setting name to "${name}"`)
+  console.log(`Setting name to "${name}"`)
   const response = await sendAtCommand(`+NAME${name}`);
   deviceState.name = name;
   putDbData(deviceStateDb);
@@ -255,7 +233,7 @@ async function setPinName(pin) {
   if (pin.length != 4) {
     throw Error('PIN length must be 4 characters');
   }
-  logInfo(`Setting PIN to "${PIN}"`)
+  console.log(`Setting PIN to "${PIN}"`)
   const response = await sendAtCommand(`+PIN${pin}`);
   deviceState.pin = pin;
   putDbData(deviceStateDb);
@@ -339,11 +317,6 @@ function clearConnectionState() {
   lastResponse = undefined;
   currentResponseLine = '';
 
-  const status = $('status');
-  while (status.firstChild) {
-    status.removeChild(status.firstChild);
-  }
-
   const response = $('response');
   while (response.firstChild) {
     response.removeChild(response.firstChild);
@@ -356,7 +329,7 @@ function clearConnectionState() {
  * @return {Promise<undefined>} A promise that resolves when the port opens.
  */
 async function openPort(toOpen) {
-  logInfo(`Opening port baud: ${deviceState.baudRate}`);
+  console.log(`Opening port baud: ${deviceState.baudRate}`);
   try {
     await toOpen.open({
       baudRate: deviceState.baudRate,
@@ -396,7 +369,6 @@ function getSelectedPort() {
 async function getPortToOpen() {
   port = getSelectedPort();
   if (port) {
-    console.log(port);
     return port;
   }
   return await navigator.serial.requestPort();
@@ -440,7 +412,7 @@ async function toggleConnectState() {
     }
   }
   catch (ex) {
-    logError('Unable to toggle serial port: ' + ex);
+    console.error('Unable to toggle serial port: ' + ex);
     setPortBannerState(/*openError=*/true);
   }
 }
@@ -487,7 +459,7 @@ async function init() {
 async function onBaudSelected(selectObject) {
   const value = selectObject.value;
   deviceState.baudRate = baudAbbrevToName[value];
-  logInfo(`Selected ${value} = ${deviceState.baudRate}`);
+  console.log(`Selected ${value} = ${deviceState.baudRate}`);
   if (isPortOpen()) {
     await setPortBaud(value);
     await reopenPort();
@@ -504,7 +476,7 @@ async function onBaudSelected(selectObject) {
 async function onParitySelected(selectObject) {
   const abbrev = selectObject.value;
   deviceState.parity = parityAbbrevToName[abbrev];
-  logInfo(`Selected ${abbrev} = ${deviceState.parity}`);
+  console.log(`Selected ${abbrev} = ${deviceState.parity}`);
   if (isPortOpen()) {
     await setParity(abbrev);
     await reopenPort();
@@ -522,7 +494,7 @@ async function onParitySelected(selectObject) {
 async function onRoleSelected(selectObject) {
   const abbrev = selectObject.value;
   deviceState.mode = roleAbbrevToName[abbrev];
-  logInfo(`Selected ${abbrev} = ${deviceState.mode}`);
+  console.log(`Selected ${abbrev} = ${deviceState.mode}`);
   if (isPortOpen()) {
     await setRole(abbrev);
   }
@@ -530,7 +502,7 @@ async function onRoleSelected(selectObject) {
 
 function onPortSelected(selectObject) {
   const selectedOption = selectObject.selectedOptions[0];
-  logInfo(`Selected a port: ${selectedOption.port}`);
+  console.log(`Selected a port: ${selectedOption.port}`);
 }
 
 /**
@@ -563,7 +535,6 @@ async function populatePortMenu() {
   }
   var option;
   ports.forEach(port => {
-    console.log(port);
     option = document.createElement('option');
     const portInfo = port.getInfo();
     option.text = `V:${portInfo.usbVendorId}/P:${portInfo.usbProductId}`;
@@ -600,7 +571,7 @@ function changeNameCallback() {
   changeNameTimeout = undefined;
 
   const name = $('aligned-name').value;
-  logInfo(`Setting device name to "${name}"`);
+  console.log(`Setting device name to "${name}"`);
   setDeviceName(name);
 }
 
@@ -627,7 +598,7 @@ function changePinCallback() {
   changePinTimeout = undefined;
 
   const pin = $('aligned-pin').value;
-  logInfo(`Setting PIN to "${pin}"`);
+  console.log(`Setting PIN to "${pin}"`);
   setDevicePin(pin);
 }
 
