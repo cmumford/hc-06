@@ -79,7 +79,7 @@ function logError(msg) {
 /**
  * Is the Web Serial API supported by this browser?
  *
- * @returns {bool} true/false
+ * @return {bool} true if supported, false if not.
  */
 function isWebSerialSupported() {
   return 'serial' in navigator;
