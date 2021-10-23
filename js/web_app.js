@@ -14,6 +14,7 @@ var deviceUpdated = false;   // The settings were written (at least once) to dev
 var changeNameTimeout;
 var changePinTimeout;
 var lastResponse;
+var currentResponseLine = '';
 const kDbName = 'HC-06';
 const kDbVersion = 1;
 const kDbObjStoreName = 'state';
@@ -69,10 +70,26 @@ function logResponse(response) {
   status.appendChild(text);
 }
 
+function isControlChar(ch) {
+  return ch === '\r' || ch === '\n';
+}
+
 function logResponseData(data) {
   const text = utf8Decoder.decode(data);
-  lastResponse = text;
-  logResponse(text);
+  var i;
+  for (i = 0; i < text.length; i++) {
+    var ch = text.charAt(i);
+    if (isControlChar(ch)) {
+      while (i < text.length && isControlChar(text.charAt(i))) {
+        i += 1;
+      }
+      logResponse(currentResponseLine);
+      lastResponse = currentResponseLine;
+      currentResponseLine = '';
+    } else {
+      currentResponseLine = currentResponseLine.concat(ch);
+    }
+  }
 }
 
 function logInfo(msg) {
@@ -320,6 +337,17 @@ function clearConnectionState() {
     changePinTimeout = undefined;
   }
   lastResponse = undefined;
+  currentResponseLine = '';
+
+  const status = $('status');
+  while (status.firstChild) {
+    status.removeChild(status.firstChild);
+  }
+
+  const response = $('response');
+  while (response.firstChild) {
+    response.removeChild(response.firstChild);
+  }
 }
 
 /**
