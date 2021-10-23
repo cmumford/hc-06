@@ -315,28 +315,34 @@ async function reopenPort() {
   openPort();
 }
 
-async function connectToPort() {
-  try {
-    port = await navigator.serial.requestPort();
-    await openPort();
-  } catch (e) {
-    setPortBannerState(/*openError=*/true);
-  }
+/**
+ * Open the currently selected port. If no port is current then
+ * one will be requested to open.
+ *
+ * @return {Promise<undefined>} A promise that resolves when the port opens.
+ */
+async function openCurrentPort() {
+  port = await navigator.serial.requestPort();
+  await openPort();
 }
 
 /**
  * Toggle the open state of the currently selected serial port.
+ *
+ * @return {Promise<undefined>} A promise that resolves when the port opens or closes.
  */
 async function toggleConnectState() {
-  if (isPortConnected()) {
-    closePort();
-  } else {
-    try {
-      await connectToPort();
+  try {
+    if (isPortConnected()) {
+      closePort();
+    } else {
+      await openCurrentPort();
       await ping();
-    } catch (ex) {
-      logError('Unable to connect to serial port: ' + ex);
     }
+  }
+  catch (ex) {
+    logError('Unable to toggle serial port: ' + ex);
+    setPortBannerState(/*openError=*/true);
   }
 }
 
