@@ -7,12 +7,13 @@ var deviceState = {
 };
 var port; // Defined only when port is open.
 var reader; // Active port reader.
-var usbProductId = null;
-var usbVendorId = null;
+var lastOpenedPortInfo;
 var deviceStateDb;
 var createdDatabase = false; // There was no settings db at page load and was created.
 var deviceUpdated = false;   // The settings were written (at least once) to device.
 var changeNameTimeout;
+var changePinTimeout;
+var lastResponse;
 const kDbName = 'HC-06';
 const kDbVersion = 1;
 const kDbObjStoreName = 'state';
@@ -69,8 +70,9 @@ function logResponse(response) {
 }
 
 function logResponseData(data) {
-  const utf8 = utf8Decoder.decode(data);
-  logResponse(utf8);
+  const text = utf8Decoder.decode(data);
+  lastResponse = text;
+  logResponse(text);
 }
 
 function logInfo(msg) {
@@ -116,13 +118,13 @@ function getDbData(db) {
  */
 function putDbData(db) {
   var transaction = db.transaction([kDbObjStoreName], 'readwrite');
-  transaction.oncomplete = (event) => {};
+  transaction.oncomplete = (event) => { };
   transaction.onerror = (event) => {
     logError(`Put transaction error: ${event.target.errorCode}`);
   };
   var store = transaction.objectStore(kDbObjStoreName);
   var request = store.put(deviceState, kDbPrimaryKeyValue);
-  request.onsuccess = (event) => {};
+  request.onsuccess = (event) => { };
 }
 
 // Open the device state database and read the saved device state.
@@ -162,6 +164,7 @@ function isPortOpen() {
  */
 function onConnect(event) {
   logInfo('A serial port has been connected.');
+  setControlState();
 }
 
 /**
@@ -171,6 +174,7 @@ function onConnect(event) {
  */
 function onDisconnect(event) {
   logInfo('A serial port has been disconnected.');
+  setControlState();
 }
 
 /**
@@ -189,7 +193,7 @@ async function sendAtCommand(payload) {
   writer.releaseLock();
   const myPromise = new Promise((resolve, reject) => {
     setTimeout(() => {
-      resolve('foo');
+      resolve(lastResponse);
     }, 300);
   });
   return myPromise;
@@ -259,7 +263,7 @@ async function closePort() {
       await reader.cancel();
     }
 
-    deviceUpdated = false;
+    clearConnectionState();
     await localPort.close();
   } finally {
     setControlState();
@@ -289,6 +293,7 @@ async function readPortData() {
   if (port) {
     // unexpected closure (like disconnected USB adapter).
     try {
+      clearConnectionState();
       await port.close();
     } catch (ex) {
       console.error(ex);
@@ -302,6 +307,19 @@ function startPortReader() {
   setTimeout(() => {
     readPortData();
   }, 0);
+}
+
+function clearConnectionState() {
+  deviceUpdated = false;
+  if (changeNameTimeout) {
+    window.clearTimeout(changeNameTimeout);
+    changeNameTimeout = undefined;
+  }
+  if (changePinTimeout) {
+    window.clearTimeout(changePinTimeout);
+    changePinTimeout = undefined;
+  }
+  lastResponse = undefined;
 }
 
 /**
@@ -320,6 +338,7 @@ async function openPort(toOpen) {
       flowControl: 'none'
     });
     port = toOpen;
+    lastOpenedPortInfo = await port.getInfo();
     deviceUpdated = false;
     startPortReader();
     putDbData(deviceStateDb);
@@ -328,9 +347,31 @@ async function openPort(toOpen) {
   }
 }
 
-async function getCurrentPort() {
-  port = await navigator.serial.requestPort();
-  return port;
+/**
+ * Return the port currently selected in the port selection menu.
+ *
+ * @return {object} selected port or null if none selected.
+ */
+function getSelectedPort() {
+  const selectObject = $('connection-port');
+  if (selectObject.selectedOptions.length) {
+    return selectObject.selectedOptions[0].port;
+  }
+  return null;
+}
+
+/**
+ * Return the port to open.
+ *
+ * @returns {object} The port to open.
+ */
+async function getPortToOpen() {
+  port = getSelectedPort();
+  if (port) {
+    console.log(port);
+    return port;
+  }
+  return await navigator.serial.requestPort();
 }
 
 /**
@@ -352,7 +393,7 @@ async function reopenPort() {
  * @return {Promise<undefined>} A promise that resolves when the port opens.
  */
 async function openCurrentPort() {
-  port = await navigator.serial.requestPort();
+  port = await getPortToOpen();
   await openPort(port);
 }
 
@@ -401,13 +442,11 @@ async function init() {
     $('web_serial_unavailable').style.display = 'block';
   }
 
-  setControlState();
-
   navigator.serial.addEventListener('connect', onConnect);
   navigator.serial.addEventListener('disconnect', onDisconnect);
 
   loadSavedDeviceState();
-  populatePortMenu();
+  setControlState();
 }
 
 /**
@@ -461,8 +500,9 @@ async function onRoleSelected(selectObject) {
   }
 }
 
-function onPortSelected(selectedObject) {
-  logInfo('Selected a port.');
+function onPortSelected(selectObject) {
+  const selectedOption = selectObject.selectedOptions[0];
+  logInfo(`Selected a port: ${selectedOption.port}`);
 }
 
 /**
@@ -498,13 +538,30 @@ async function populatePortMenu() {
     console.log(port);
     option = document.createElement('option');
     const portInfo = port.getInfo();
-    option.text = `${portInfo.usbVendorId}/${portInfo.usbProductId}`;
+    option.text = `V:${portInfo.usbVendorId}/P:${portInfo.usbProductId}`;
+    option.port = port;
     portMenu.add(option);
   });
 
   option = document.createElement('option');
-  option.text = 'New';
+  option.text = 'Select other port...';
+  option.port = null;
   portMenu.add(option);
+
+  var idxToSelect = 0;
+  if (lastOpenedPortInfo) {
+    for (i = 0; i < portMenu.options.length; i++) {
+      if (portMenu.options[i].port) {
+        const info = await portMenu.options[i].port.getInfo();
+        if (info.usbProductId == lastOpenedPortInfo.usbProductId &&
+          info.usbVendorId == lastOpenedPortInfo.usbVendorId) {
+          idxToSelect = i;
+          break;
+        }
+      }
+    }
+  }
+  portMenu.selectedIndex = idxToSelect;
 }
 
 /**
@@ -593,6 +650,8 @@ function setPortBannerState(openError) {
  * application.
  */
 async function setControlState() {
+  populatePortMenu();
+
   $('aligned-name').disabled = !isPortOpen();
   $('aligned-pin').disabled = !isPortOpen();
   $('aligned-role').disabled = !isPortOpen();
