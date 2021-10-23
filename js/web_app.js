@@ -11,7 +11,7 @@ var isOpen = false; // Is the port currently open?
 var deviceStateDb;
 var createdDatabase = false; // There was no settings db at page load and was created.
 var deviceUpdated = false;   // The settings were written (at least once) to device.
-var nameChangeTimer;
+var changeNameTimeout;
 const kDbName = 'HC-06';
 const kDbVersion = 1;
 const kDbObjStoreName = 'state';
@@ -84,7 +84,7 @@ function getDbData(db) {
   var request = store.get(kDbPrimaryKeyValue);
   request.onsuccess = (event) => {
     deviceState = request.result;
-    sensitizeControls();
+    setControlState();
   };
 }
 
@@ -150,7 +150,7 @@ function onConnect(event) {
   logInfo('Connected to serial port.');
   isConnected = true;
   deviceUpdated = false;
-  sensitizeControls();
+  setControlState();
 }
 
 /**
@@ -162,7 +162,7 @@ function onDisconnect(event) {
   logInfo('Disconnected from serial port.');
   isConnected = false;
   deviceUpdated = false;
-  sensitizeControls();
+  setControlState();
 }
 
 async function sendAtCommand(payload) {
@@ -183,7 +183,7 @@ async function sendAtCommand(payload) {
     isConnected = false;
     deviceUpdated = false;
     isOpen = false;
-    sensitizeControls();
+    setControlState();
     return null;
   }
 
@@ -253,7 +253,7 @@ async function closePort() {
     deviceUpdated = false;
     await port.close();
   } finally {
-    sensitizeControls();
+    setControlState();
   }
 }
 
@@ -277,7 +277,7 @@ async function openPort() {
     isOpen = true;
     putDbData(deviceStateDb);
   } finally {
-    sensitizeControls();
+    setControlState();
   }
 }
 
@@ -319,7 +319,7 @@ async function toggleConnectState() {
 }
 
 /**
- * One time page initialization.
+ * One time initialization.
  */
 async function init() {
   getMenuValues();
@@ -343,7 +343,7 @@ async function init() {
     $('web_serial_unavailable').style.display = 'block';
   }
 
-  sensitizeControls();
+  setControlState();
 
   navigator.serial.addEventListener('connect', onConnect);
   navigator.serial.addEventListener('disconnect', onDisconnect);
@@ -352,9 +352,11 @@ async function init() {
 }
 
 /**
- * Callback when device baud is selected.
+ * Callback when device baud is changed.
  *
- * @param {*} selectObject The HTML select object.
+ * @param {object} selectObject The HTML select object.
+ * @returns {Promise<undefined>} A promise that resolves when the port is
+ *          reopened (if previously opened) else immediately.
  */
 async function onBaudSelected(selectObject) {
   const value = selectObject.value;
@@ -366,6 +368,13 @@ async function onBaudSelected(selectObject) {
   }
 }
 
+/**
+ * Callback when device parity is changed.
+ *
+ * @param {object} selectObject The HTML select object.
+ * @returns {Promise<undefined>} A promise that resolves when the port is
+ *          reopened (if previously opened) else immediately.
+ */
 async function onParitySelected(selectObject) {
   const abbrev = selectObject.value;
   deviceState.parity = parityAbbrevToName[abbrev];
@@ -376,6 +385,14 @@ async function onParitySelected(selectObject) {
   }
 }
 
+/**
+ * Callback when device role is changed.
+ *
+ * @param {object} selectObject The HTML select object.
+ * @returns {Promise<undefined>} A promise that resolves when the device
+ *          role has been changed on device (if currently opened) else
+ *          immediately.
+ */
 async function onRoleSelected(selectObject) {
   const abbrev = selectObject.value;
   deviceState.mode = roleAbbrevToName[abbrev];
@@ -385,6 +402,10 @@ async function onRoleSelected(selectObject) {
   }
 }
 
+/**
+ * Retrieve the parity, role, and speed key/value pairs from
+ * the DOM.
+ */
 function getMenuValues() {
   for (const option of $('aligned-parity').options) {
     parityAbbrevToName[option.value] = option.innerText;
@@ -398,40 +419,64 @@ function getMenuValues() {
   }
 }
 
+/**
+ * Timeout callback to update the currently open device name
+ * with the current value from the form.
+ */
 function changeNameCallback() {
-  nameChangeTimer = undefined;
+  changeNameTimeout = undefined;
 
   const name = $('aligned-name').value;
   logInfo(`Setting device name to "${name}"`);
   setDeviceName(name);
 }
 
+/**
+ * Start (or restart) a 1/2 sec. timeout to update the device
+ * name from the input form field.
+ *
+ * @param {object} element The name input form element.
+ */
 function onNameChanged(element) {
-  if (nameChangeTimer) {
-    window.clearTimeout(nameChangeTimer);
-    nameChangeTimer = undefined;
+  if (changeNameTimeout) {
+    window.clearTimeout(changeNameTimeout);
+    changeNameTimeout = undefined;
   }
-  nameChangeTimer =
+  changeNameTimeout =
     window.setTimeout(changeNameCallback, /*milliseconds=*/ 500);
 }
 
+/**
+ * Timeout callback to update the currently open device PIN
+ * with the current value from the form.
+ */
 function changePinCallback() {
-  pinChangeTimer = undefined;
+  changePinTimeout = undefined;
 
   const pin = $('aligned-pin').value;
   logInfo(`Setting PIN to "${pin}"`);
   setDevicePin(pin);
 }
 
-function startPinChangeTimer(element) {
-  if (pinChangeTimer) {
-    window.clearTimeout(pinChangeTimer);
-    pinChangeTimer = undefined;
+/**
+ * Start (or restart) a 1/2 sec. timeout to update the device
+ * PIN from the input form field.
+ *
+ * @param {object} element The name input form element.
+ */
+function onPinChanged(element) {
+  if (changePinTimeout) {
+    window.clearTimeout(changePinTimeout);
+    changePinTimeout = undefined;
   }
-  pinChangeTimer =
+  changePinTimeout =
     window.setTimeout(changePinCallback, /*milliseconds=*/ 500);
 }
 
+/**
+ *
+ * @param {bool} openError true of there was an error opening port.
+ */
 function setPortBannerState(openError) {
   var toggleConnect = $('toggle-connect');
   var connectBanner = $('connect-banner');
@@ -455,7 +500,11 @@ function setPortBannerState(openError) {
   }
 }
 
-function sensitizeControls() {
+/**
+ * Adjust control states according to the state of this
+ * application.
+ */
+function setControlState() {
   $('aligned-name').disabled = !isPortConnected();
   $('aligned-pin').disabled = !isPortConnected();
   $('aligned-role').disabled = !isPortConnected();
@@ -489,6 +538,9 @@ function sensitizeControls() {
   }
 }
 
+/**
+ * Set control values to match application state.
+ */
 function setControlValues() {
   const value =
     parseInt(dictReverseLookup(baudAbbrevToName, deviceState.baudRate), 16);
