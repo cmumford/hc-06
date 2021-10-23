@@ -5,9 +5,8 @@ var deviceState = {
   pin: '1234',     // four digit number.
   mode: 'master'   // 'master' or 'slave'.
 };
-var port;
-var isConnected = false;
-var isOpen = false; // Is the port currently open?
+var port; // Defined only when port is open.
+var reader; // Active port reader.
 var deviceStateDb;
 var createdDatabase = false; // There was no settings db at page load and was created.
 var deviceUpdated = false;   // The settings were written (at least once) to device.
@@ -20,6 +19,7 @@ const kDbPrimaryKeyValue = 1;
 const parityAbbrevToName = {};  // Abbrev ("PO", etc.) to name ("odd", etc.).
 const roleAbbrevToName = {};  // Abbrev ("M", "S") to name ("master", "slave");
 const baudAbbrevToName = {};  // Abbrev ("1", "2") to name ("1200", "2400");
+const utf8Decoder = new TextDecoder();
 
 function $(id) {
   return document.getElementById(id);
@@ -64,6 +64,11 @@ function logResponse(response) {
   const text = document.createTextNode(response);
   status.appendChild(br);
   status.appendChild(text);
+}
+
+function logResponseData(data) {
+  const utf8 = utf8Decoder.decode(data);
+  logResponse(utf8);
 }
 
 function logInfo(msg) {
@@ -140,21 +145,12 @@ function loadSavedDeviceState() {
 }
 
 /**
- * Is a serial port currently open?
+ * Is the serial port currently open?
  *
  * @returns true/false.
  */
 function isPortOpen() {
-  return isOpen;
-}
-
-/**
- * Is the serial port both open **and** connected?
- *
- * @returns true/false.
- */
-function isPortConnected() {
-  return isConnected;
+  return !!port;
 }
 
 /**
@@ -163,10 +159,7 @@ function isPortConnected() {
  * @param {Event} event (unused)
  */
 function onConnect(event) {
-  logInfo('Connected to serial port.');
-  isConnected = true;
-  deviceUpdated = false;
-  setControlState();
+  logInfo('A serial port has been connected.');
 }
 
 /**
@@ -175,42 +168,29 @@ function onConnect(event) {
  * @param {Event} event (unused)
  */
 function onDisconnect(event) {
-  logInfo('Disconnected from serial port.');
-  isConnected = false;
-  deviceUpdated = false;
-  setControlState();
+  logInfo('A serial port has been disconnected.');
 }
 
 /**
  * Send an AT command.
  *
  * @param {string} payload The AT command payload. Can be empty.
- * @returns
+ * @returns {Promise<string>} A promise that resolves to the device response.
  */
 async function sendAtCommand(payload) {
-  if (!isPortConnected()) {
+  if (!isPortOpen()) {
     throw Error('Port not connected.');
   }
   const write_string = payload ? 'AT' + payload : 'AT';
   const writer = port.writable.getWriter();
   await writer.write(new TextEncoder().encode(write_string));
   writer.releaseLock();
-
-  // Read response.
-  reader = port.readable.getReader();
-  const { value, done } = await reader.read();
-  reader.releaseLock();
-  if (done) {
-    logInfo('Port is closed');
-    isConnected = false;
-    deviceUpdated = false;
-    isOpen = false;
-    setControlState();
-    return null;
-  }
-
-  const response = new TextDecoder().decode(value);
-  return response;
+  const myPromise = new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve('foo');
+    }, 300);
+  });
+  return myPromise;
 }
 
 async function setPortBaud(baudValue) {
@@ -270,13 +250,56 @@ async function ping() {
  */
 async function closePort() {
   try {
-    isConnected = false;
-    isOpen = false;
+    const localPort = port;
+    port = undefined;
+
+    if (reader) {
+      await reader.cancel();
+    }
+
     deviceUpdated = false;
-    await port.close();
+    await localPort.close();
   } finally {
     setControlState();
   }
+}
+
+async function readPortData() {
+  while (port && port.readable) {
+    try {
+      reader = port.readable.getReader();
+      while (true) {
+        const { value, done } = await reader.read();
+        if (value) {
+          logResponseData(value);
+        }
+        if (done) {
+          break;
+        }
+      }
+      reader.releaseLock();
+      reader = undefined;
+    } catch (ex) {
+      console.error(ex);
+    }
+  }
+  // App gets here when the port has been closed.
+  if (port) {
+    // unexpected closure (like disconnected USB adapter).
+    try {
+      await port.close();
+    } catch (ex) {
+      console.error(ex);
+    }
+    port = undefined;
+    setControlState();
+  }
+}
+
+function startPortReader() {
+  setTimeout(() => {
+    readPortData();
+  }, 0);
 }
 
 /**
@@ -284,23 +307,28 @@ async function closePort() {
  *
  * @return {Promise<undefined>} A promise that resolves when the port opens.
  */
-async function openPort() {
+async function openPort(toOpen) {
   logInfo(`Opening port baud: ${deviceState.baudRate}`);
   try {
-    await port.open({
+    await toOpen.open({
       baudRate: deviceState.baudRate,
-      parity: 'none',
+      parity: deviceState.parity,
       dataBits: 8,
       stopBits: 1,
       flowControl: 'none'
     });
-    isConnected = true;
+    port = toOpen;
     deviceUpdated = false;
-    isOpen = true;
+    startPortReader();
     putDbData(deviceStateDb);
   } finally {
     setControlState();
   }
+}
+
+async function getCurrentPort() {
+  port = await navigator.serial.requestPort();
+  return port;
 }
 
 /**
@@ -312,7 +340,7 @@ async function reopenPort() {
   if (isPortOpen()) {
     await closePort();
   }
-  openPort();
+  openCurrentPort();
 }
 
 /**
@@ -323,7 +351,7 @@ async function reopenPort() {
  */
 async function openCurrentPort() {
   port = await navigator.serial.requestPort();
-  await openPort();
+  await openPort(port);
 }
 
 /**
@@ -333,7 +361,7 @@ async function openCurrentPort() {
  */
 async function toggleConnectState() {
   try {
-    if (isPortConnected()) {
+    if (isPortOpen()) {
       closePort();
     } else {
       await openCurrentPort();
@@ -390,7 +418,7 @@ async function onBaudSelected(selectObject) {
   const value = selectObject.value;
   deviceState.baudRate = baudAbbrevToName[value];
   logInfo(`Selected ${value} = ${deviceState.baudRate}`);
-  if (isPortConnected()) {
+  if (isPortOpen()) {
     await setPortBaud(value);
     await reopenPort();
   }
@@ -407,7 +435,7 @@ async function onParitySelected(selectObject) {
   const abbrev = selectObject.value;
   deviceState.parity = parityAbbrevToName[abbrev];
   logInfo(`Selected ${abbrev} = ${deviceState.parity}`);
-  if (isPortConnected()) {
+  if (isPortOpen()) {
     await setParity(abbrev);
     await reopenPort();
   }
@@ -425,7 +453,7 @@ async function onRoleSelected(selectObject) {
   const abbrev = selectObject.value;
   deviceState.mode = roleAbbrevToName[abbrev];
   logInfo(`Selected ${abbrev} = ${deviceState.mode}`);
-  if (isPortConnected()) {
+  if (isPortOpen()) {
     await setRole(abbrev);
   }
 }
@@ -533,9 +561,9 @@ function setPortBannerState(openError) {
  * application.
  */
 function setControlState() {
-  $('aligned-name').disabled = !isPortConnected();
-  $('aligned-pin').disabled = !isPortConnected();
-  $('aligned-role').disabled = !isPortConnected();
+  $('aligned-name').disabled = !isPortOpen();
+  $('aligned-pin').disabled = !isPortOpen();
+  $('aligned-role').disabled = !isPortOpen();
 
   setPortBannerState(/*openError=*/false);
 
