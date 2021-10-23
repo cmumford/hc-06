@@ -13,8 +13,8 @@ var createdDatabase = false; // There was no settings db at page load and was cr
 var deviceUpdated = false;   // The settings were written (at least once) to device.
 var changeNameTimeout;
 var changePinTimeout;
-var lastResponse;
 var currentResponseLine = '';
+var pendingResponsePromises = [];
 const kDbName = 'HC-06';
 const kDbVersion = 1;
 const kDbObjStoreName = 'state';
@@ -62,17 +62,22 @@ function isControlChar(ch) {
   return ch === '\r' || ch === '\n';
 }
 
-function logResponseData(data) {
+function handleDeviceResponseData(data) {
   const text = utf8Decoder.decode(data);
   var i;
   for (i = 0; i < text.length; i++) {
-    var ch = text.charAt(i);
+    const ch = text.charAt(i);
     if (isControlChar(ch)) {
       while (i < text.length && isControlChar(text.charAt(i))) {
         i += 1;
       }
       logResponse(currentResponseLine);
-      lastResponse = currentResponseLine;
+      if (pendingResponsePromises.length) {
+        pendingResponsePromises.forEach((promise) => {
+          promise.resolve(currentResponseLine);
+        });
+        pendingResponsePromises = [];
+      }
       currentResponseLine = '';
     } else {
       currentResponseLine = currentResponseLine.concat(ch);
@@ -186,12 +191,12 @@ async function sendAtCommand(payload) {
   const writer = port.writable.getWriter();
   await writer.write(new TextEncoder().encode(write_string));
   writer.releaseLock();
-  const myPromise = new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve(lastResponse);
-    }, 300);
+  return new Promise((resolve, reject) => {
+    // The goal is to defer resolution until the next line
+    // response text is received from the device.
+    // Believe this is the **wrong** way to do this.
+    pendingResponsePromises.push({ resolve: resolve, reject: reject });
   });
-  return myPromise;
 }
 
 async function setPortBaud(baudValue) {
@@ -241,7 +246,7 @@ async function setPinName(pin) {
 
 async function ping() {
   const response = await sendAtCommand();
-  logResponse(`Ping response: "${response}"`);
+  console.log(`Ping response: "${response}"`);
 }
 
 /**
@@ -272,7 +277,7 @@ async function readPortData() {
       while (true) {
         const { value, done } = await reader.read();
         if (value) {
-          logResponseData(value);
+          handleDeviceResponseData(value);
         }
         if (done) {
           break;
@@ -314,13 +319,17 @@ function clearConnectionState() {
     window.clearTimeout(changePinTimeout);
     changePinTimeout = undefined;
   }
-  lastResponse = undefined;
   currentResponseLine = '';
 
   const response = $('response');
   while (response.firstChild) {
     response.removeChild(response.firstChild);
   }
+
+  pendingResponsePromises.forEach((promise) => {
+    promise.reject('port closed');
+  });
+  pendingResponsePromises = [];
 }
 
 /**
