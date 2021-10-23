@@ -7,6 +7,8 @@ var deviceState = {
 };
 var port; // Defined only when port is open.
 var reader; // Active port reader.
+var usbProductId = null;
+var usbVendorId = null;
 var deviceStateDb;
 var createdDatabase = false; // There was no settings db at page load and was created.
 var deviceUpdated = false;   // The settings were written (at least once) to device.
@@ -114,13 +116,13 @@ function getDbData(db) {
  */
 function putDbData(db) {
   var transaction = db.transaction([kDbObjStoreName], 'readwrite');
-  transaction.oncomplete = (event) => { };
+  transaction.oncomplete = (event) => {};
   transaction.onerror = (event) => {
     logError(`Put transaction error: ${event.target.errorCode}`);
   };
   var store = transaction.objectStore(kDbObjStoreName);
   var request = store.put(deviceState, kDbPrimaryKeyValue);
-  request.onsuccess = (event) => { };
+  request.onsuccess = (event) => {};
 }
 
 // Open the device state database and read the saved device state.
@@ -405,6 +407,7 @@ async function init() {
   navigator.serial.addEventListener('disconnect', onDisconnect);
 
   loadSavedDeviceState();
+  populatePortMenu();
 }
 
 /**
@@ -458,6 +461,10 @@ async function onRoleSelected(selectObject) {
   }
 }
 
+function onPortSelected(selectedObject) {
+  logInfo('Selected a port.');
+}
+
 /**
  * Retrieve the parity, role, and speed key/value pairs from
  * the DOM.
@@ -473,6 +480,31 @@ function getMenuValues() {
     const speed = option.innerText.replaceAll(',', '');
     baudAbbrevToName[option.value] = speed;
   }
+}
+
+async function populatePortMenu() {
+  const portMenu = $('connection-port');
+  var i, L = portMenu.options.length - 1;
+  for (i = L; i >= 0; i--) {
+    portMenu.remove(i);
+  }
+
+  const ports = await navigator.serial.getPorts();
+  if (ports.length == 0) {
+    return;
+  }
+  var option;
+  ports.forEach(port => {
+    console.log(port);
+    option = document.createElement('option');
+    const portInfo = port.getInfo();
+    option.text = `${portInfo.usbVendorId}/${portInfo.usbProductId}`;
+    portMenu.add(option);
+  });
+
+  option = document.createElement('option');
+  option.text = 'New';
+  portMenu.add(option);
 }
 
 /**
@@ -560,16 +592,22 @@ function setPortBannerState(openError) {
  * Adjust control states according to the state of this
  * application.
  */
-function setControlState() {
+async function setControlState() {
   $('aligned-name').disabled = !isPortOpen();
   $('aligned-pin').disabled = !isPortOpen();
   $('aligned-role').disabled = !isPortOpen();
 
-  setPortBannerState(/*openError=*/false);
+  setPortBannerState(/*openError=*/ false);
 
   $('aligned-name').value = deviceState.name;
   $('aligned-pin').value = deviceState.pin;
 
+  const ports = await navigator.serial.getPorts();
+  if (ports.length > 0 && !isPortOpen()) {
+    $('connection-port-div').style.visibility = 'visible';
+  } else {
+    $('connection-port-div').style.visibility = 'hidden';
+  }
   var all = document.getElementsByClassName('value-info');
   if (deviceUpdated) {
     // UI values reflect state of device.
