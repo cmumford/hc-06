@@ -159,27 +159,7 @@ function isPortOpen() {
 }
 
 /**
- * Event handler for serial port connection.
- *
- * @param {Event} event (unused)
- */
-function onConnect(event) {
-  console.log('A serial port has been connected.');
-  setControlState();
-}
-
-/**
- * Event handler for serial port disconnection.
- *
- * @param {Event} event (unused)
- */
-function onDisconnect(event) {
-  console.log('A serial port has been disconnected.');
-  setControlState();
-}
-
-/**
- * Send an AT command.
+ * Send an AT command and return the device response.
  *
  * @param {string} payload The AT command payload. Can be empty.
  * @returns {Promise<string>} A promise that resolves to the device response.
@@ -421,11 +401,10 @@ async function toggleConnectState() {
       portStatus = 'opening';
       await openCurrentPort();
       const response = await ping();
-      console.log(`open now: "${response}"`);
       if (response == "OK") {
         portStatus = 'open';
       } else {
-        throw Error('Invalid ping response.');;
+        throw Error(`Invalid ping response "${response}"".`);;
       }
     }
   }
@@ -464,8 +443,14 @@ async function init() {
     $('web_serial_unavailable').style.display = 'block';
   }
 
-  navigator.serial.addEventListener('connect', onConnect);
-  navigator.serial.addEventListener('disconnect', onDisconnect);
+  navigator.serial.addEventListener('connect', (event) => {
+    console.log('A serial port has been connected.');
+    setControlState();
+  });
+  navigator.serial.addEventListener('disconnect', (event) => {
+    console.log('A serial port has been disconnected.');
+    setControlState();
+  });
 
   loadSavedDeviceState();
   setControlState();
