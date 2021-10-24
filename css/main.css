@@ -26,7 +26,7 @@
   width: 50%;
 }
 
-#connection-port-div {
+#open-port-div {
   display: inline;
 }
 
@@ -34,25 +34,25 @@
   padding: 0px !important;
 }
 
-.connected {
+.opened {
   background-color: rgb(174, 248, 165);
   transition-property: background-color;
   transition-duration: 0.5s;
 }
 
-.connecting {
+.opening {
   background-color: rgb(255, 225, 91);
   transition-property: background-color;
   transition-duration: 0.5s;
 }
 
-.disconnected {
+.closed {
   background-color: rgb(75, 75, 75);
   transition-property: background-color;
   transition-duration: 0.5s;
 }
 
-.connect-error {
+.open-error {
   background-color: rgb(255, 174, 174);
   transition-property: background-color;
   transition-duration: 0.5s;
@@ -71,11 +71,11 @@
   color: rgb(230, 164, 250);
 }
 
-.connect-error a {
+.open-error a {
   color: #003c9c;
 }
 
-.connect-error a:visited {
+.open-error a:visited {
   color: #5f007c;
 }
 

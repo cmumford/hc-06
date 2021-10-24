@@ -186,7 +186,7 @@ function onDisconnect(event) {
  */
 async function sendAtCommand(payload) {
   if (!isPortOpen()) {
-    throw Error('Port not connected.');
+    throw Error('Port not opened.');
   }
   const write_string = payload ? 'AT' + payload : 'AT';
   const writer = port.writable.getWriter();
@@ -646,10 +646,10 @@ function setPortBannerState(openError) {
   var toggleConnect = $('toggle-connect');
   var connectBanner = $('connect-banner');
   const banner_styles = [
-    'disconnected',
-    'connect-error',
-    'connected',
-    'connecting',
+    'closed',
+    'open-error',
+    'opened',
+    'opening',
   ];
 
   banner_styles.forEach((style_name) => {
@@ -659,19 +659,19 @@ function setPortBannerState(openError) {
   if (isPortOpen()) {
     toggleConnect.innerText = 'Disconnect';
     if (portStatus == 'opening') {
-      connectBanner.classList.add('connecting');
+      connectBanner.classList.add('opening');
     } else if (portStatus == 'open-error') {
-      connectBanner.classList.add('connect-error');
+      connectBanner.classList.add('open-error');
     } else {
-      connectBanner.classList.add('connected');
+      connectBanner.classList.add('opened');
     }
     $('connect-info').style.visibility = 'hidden';
   } else {
     toggleConnect.innerText = 'Connect';
     if (portStatus == 'open-error') {
-      connectBanner.classList.add('connect-error');
+      connectBanner.classList.add('open-error');
     } else {
-      connectBanner.classList.add('disconnected');
+      connectBanner.classList.add('closed');
     }
     $('connect-info').style.visibility = 'visible';
   }
@@ -695,9 +695,9 @@ async function setControlState() {
 
   const ports = await navigator.serial.getPorts();
   if (ports.length > 0 && !isPortOpen()) {
-    $('connection-port-div').style.visibility = 'visible';
+    $('open-port-div').style.visibility = 'visible';
   } else {
-    $('connection-port-div').style.visibility = 'hidden';
+    $('open-port-div').style.visibility = 'hidden';
   }
   var all = document.getElementsByClassName('value-info');
   if (deviceUpdated) {
