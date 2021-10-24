@@ -47,18 +47,6 @@ function dictReverseLookup(dict, value) {
   return foundValue;
 }
 
-/**
- * Append device response to UI section.
- * @param {string} response The device response to log.
- */
-function logResponse(response) {
-  const status = $('response');
-  const br = document.createElement('br');
-  const text = document.createTextNode(response);
-  status.appendChild(br);
-  status.appendChild(text);
-}
-
 function isControlChar(ch) {
   return ch === '\r' || ch === '\n';
 }
@@ -72,7 +60,6 @@ function handleDeviceResponseData(data) {
       while (i < text.length && isControlChar(text.charAt(i))) {
         i += 1;
       }
-      logResponse(currentResponseLine);
       if (pendingResponsePromises.length) {
         pendingResponsePromises.forEach((promise) => {
           promise.resolve(currentResponseLine);
@@ -331,14 +318,10 @@ function clearConnectionState() {
     window.clearTimeout(changePinTimeout);
     changePinTimeout = undefined;
   }
-  currentResponseLine = '';
-
-  const response = $('response');
-  while (response.firstChild) {
-    response.removeChild(response.firstChild);
-  }
 
   portStatus = 'closed';
+
+  currentResponseLine = '';
   pendingResponsePromises.forEach((promise) => {
     promise.reject(Error('port closed'));
   });
