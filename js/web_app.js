@@ -182,7 +182,11 @@ async function sendAtCommand(payload) {
 
 async function setPortBaud(baudValue) {
   const response = await sendAtCommand(`+BAUD${baudValue}`);
-  putDbData(deviceStateDb);
+  if (response && response.startsWith('OK')) {
+    putDbData(deviceStateDb);
+  } else {
+    throw Error(`Unable to set baud: \"${response}\"`);
+  }
 }
 
 /**
@@ -192,7 +196,11 @@ async function setPortBaud(baudValue) {
  */
 async function setParity(parity) {
   const response = await sendAtCommand(`+${parity}`);
-  putDbData(deviceStateDb);
+  if (response && response.startsWith('OK')) {
+    putDbData(deviceStateDb);
+  } else {
+    throw Error(`Unable to set parity: \"${response}\"`);
+  }
 }
 
 /**
@@ -211,22 +219,36 @@ async function setDeviceName(name) {
   }
   console.log(`Setting name to "${name}"`)
   const response = await sendAtCommand(`+NAME${name}`);
+  if (response == 'OKname') {
+    putDbData(deviceStateDb);
+  } else {
+    throw Error(`Unable to set name: \"${response}\"`);
+  }
   deviceState.name = name;
-  putDbData(deviceStateDb);
 }
 
-async function setPinName(pin) {
+async function setPin(pin) {
   if (pin.length != 4) {
     throw Error('PIN length must be 4 characters');
   }
   console.log(`Setting PIN to "${PIN}"`)
   const response = await sendAtCommand(`+PIN${pin}`);
+  if (response == 'OKsetpin') {
+    putDbData(deviceStateDb);
+  } else {
+    throw Error(`Unable to set PIN: \"${response}\"`);
+  }
   deviceState.pin = pin;
-  putDbData(deviceStateDb);
 }
 
+/**
+ * Send a known message to the device to verify ability to communicate.
+ *
+ * @returns {Promise<boolean>} true when successful else false.
+ */
 async function ping() {
-  return await sendAtCommand();
+  const response = await sendAtCommand();
+  return response == 'OK';
 }
 
 /**
@@ -250,6 +272,9 @@ async function closePort() {
   }
 }
 
+/**
+ * Read all data from the serial port as long as it is open.
+ */
 async function readPortData() {
   while (port && port.readable) {
     try {
@@ -269,7 +294,7 @@ async function readPortData() {
       console.error(ex);
     }
   }
-  // App gets here when the port has been closed.
+  // Function gets here when the port has been closed.
   if (port) {
     // unexpected closure (like disconnected USB adapter).
     try {
@@ -283,12 +308,19 @@ async function readPortData() {
   }
 }
 
+/**
+ * Start an async serial port reader.
+ */
 function startPortReader() {
   setTimeout(() => {
     readPortData();
   }, 0);
 }
 
+/**
+ * Reset any global variables back to where they should be
+ * with a closed serial port.
+ */
 function clearConnectionState() {
   deviceUpdated = false;
   if (changeNameTimeout) {
@@ -308,7 +340,7 @@ function clearConnectionState() {
 
   portStatus = 'closed';
   pendingResponsePromises.forEach((promise) => {
-    promise.reject(new Error('port closed'));
+    promise.reject(Error('port closed'));
   });
   pendingResponsePromises = [];
 }
@@ -374,7 +406,7 @@ async function reopenPort() {
   if (isPortOpen()) {
     await closePort();
   }
-  openCurrentPort();
+  await openCurrentPort();
 }
 
 /**
@@ -401,10 +433,10 @@ async function toggleConnectState() {
       portStatus = 'opening';
       await openCurrentPort();
       const response = await ping();
-      if (response == "OK") {
+      if (response) {
         portStatus = 'open';
       } else {
-        throw Error(`Invalid ping response "${response}"".`);;
+        throw Error(`Device ping failed.`);;
       }
     }
   }
@@ -414,7 +446,7 @@ async function toggleConnectState() {
       portStatus = 'open-error';
     }
   } finally {
-    setPortBannerState();
+    setConnectBannerState();
   }
 }
 
@@ -474,7 +506,7 @@ async function onBaudSelected(selectObject) {
 }
 
 /**
- * Callback when device parity is changed.
+ * Call when device parity is changed.
  *
  * @param {object} selectObject The HTML select object.
  * @returns {Promise<undefined>} A promise that resolves when the port is
@@ -491,7 +523,7 @@ async function onParitySelected(selectObject) {
 }
 
 /**
- * Callback when device role is changed.
+ * Call when device role is changed.
  *
  * @param {object} selectObject The HTML select object.
  * @returns {Promise<undefined>} A promise that resolves when the device
@@ -505,11 +537,6 @@ async function onRoleSelected(selectObject) {
   if (isPortOpen()) {
     await setRole(abbrev);
   }
-}
-
-function onPortSelected(selectObject) {
-  const selectedOption = selectObject.selectedOptions[0];
-  console.log(`Selected a port: ${selectedOption.port}`);
 }
 
 /**
@@ -529,6 +556,9 @@ function getMenuValues() {
   }
 }
 
+/**
+ * Add available ports to the port menu.
+ */
 async function populatePortMenu() {
   const portMenu = $('connection-port');
   var i, L = portMenu.options.length - 1;
@@ -625,9 +655,9 @@ function onPinChanged(element) {
 }
 
 /**
- *
+ * Set the state of the connect banner.
  */
-function setPortBannerState(openError) {
+function setConnectBannerState() {
   var toggleConnect = $('toggle-connect');
   var connectBanner = $('connect-banner');
   const banner_styles = [
@@ -673,7 +703,7 @@ async function setControlState() {
   $('aligned-pin').disabled = !isPortOpen();
   $('aligned-role').disabled = !isPortOpen();
 
-  setPortBannerState();
+  setConnectBannerState();
 
   $('aligned-name').value = deviceState.name;
   $('aligned-pin').value = deviceState.pin;
