@@ -40,6 +40,12 @@
   transition-duration: 0.5s;
 }
 
+.connecting {
+  background-color: rgb(255, 225, 91);
+  transition-property: background-color;
+  transition-duration: 0.5s;
+}
+
 .disconnected {
   background-color: rgb(75, 75, 75);
   transition-property: background-color;

@@ -9,6 +9,7 @@ var port; // Defined only when port is open.
 var reader; // Active port reader.
 var lastOpenedPortInfo;
 var deviceStateDb;
+var portStatus = 'closed';  // 'closed', 'opening', 'open', and 'open-error'.
 var createdDatabase = false; // There was no settings db at page load and was created.
 var deviceUpdated = false;   // The settings were written (at least once) to device.
 var changeNameTimeout;
@@ -245,8 +246,7 @@ async function setPinName(pin) {
 }
 
 async function ping() {
-  const response = await sendAtCommand();
-  console.log(`Ping response: "${response}"`);
+  return await sendAtCommand();
 }
 
 /**
@@ -326,6 +326,7 @@ function clearConnectionState() {
     response.removeChild(response.firstChild);
   }
 
+  portStatus = 'closed';
   pendingResponsePromises.forEach((promise) => {
     promise.reject('port closed');
   });
@@ -340,6 +341,7 @@ function clearConnectionState() {
 async function openPort(toOpen) {
   console.log(`Opening port baud: ${deviceState.baudRate}`);
   try {
+    portStatus = 'opening';
     await toOpen.open({
       baudRate: deviceState.baudRate,
       parity: deviceState.parity,
@@ -416,13 +418,22 @@ async function toggleConnectState() {
     if (isPortOpen()) {
       closePort();
     } else {
+      portStatus = 'opening';
       await openCurrentPort();
-      await ping();
+      const response = await ping();
+      console.log(`open now: "${response}"`);
+      if (response == "OK") {
+        portStatus = 'open';
+      } else {
+        throw Error('Invalid ping response.');;
+      }
     }
   }
   catch (ex) {
     console.error('Unable to toggle serial port: ' + ex);
-    setPortBannerState(/*openError=*/true);
+    portStatus = 'open-error';
+  } finally {
+    setPortBannerState();
   }
 }
 
@@ -628,25 +639,36 @@ function onPinChanged(element) {
 
 /**
  *
- * @param {bool} openError true of there was an error opening port.
  */
 function setPortBannerState(openError) {
   var toggleConnect = $('toggle-connect');
   var connectBanner = $('connect-banner');
+  const banner_styles = [
+    'disconnected',
+    'connect-error',
+    'connected',
+    'connecting',
+  ];
+
+  banner_styles.forEach((style_name) => {
+    connectBanner.classList.remove(style_name);
+  });
+
   if (isPortOpen()) {
     toggleConnect.innerText = 'Disconnect';
-    connectBanner.classList.remove('disconnected');
-    connectBanner.classList.remove('connect-error');
-    connectBanner.classList.add('connected');
+    if (portStatus == 'opening') {
+      connectBanner.classList.add('connecting');
+    } else if (portStatus == 'open-error') {
+      connectBanner.classList.add('connect-error');
+    } else {
+      connectBanner.classList.add('connected');
+    }
     $('connect-info').style.visibility = 'hidden';
   } else {
     toggleConnect.innerText = 'Connect';
-    connectBanner.classList.remove('connected');
-    if (openError) {
+    if (portStatus == 'open-error') {
       connectBanner.classList.add('connect-error');
-      connectBanner.classList.remove('disconnected');
     } else {
-      connectBanner.classList.remove('connect-error');
       connectBanner.classList.add('disconnected');
     }
     $('connect-info').style.visibility = 'visible';
@@ -664,7 +686,7 @@ async function setControlState() {
   $('aligned-pin').disabled = !isPortOpen();
   $('aligned-role').disabled = !isPortOpen();
 
-  setPortBannerState(/*openError=*/ false);
+  setPortBannerState();
 
   $('aligned-name').value = deviceState.name;
   $('aligned-pin').value = deviceState.pin;
