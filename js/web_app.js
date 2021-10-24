@@ -328,7 +328,7 @@ function clearConnectionState() {
 
   portStatus = 'closed';
   pendingResponsePromises.forEach((promise) => {
-    promise.reject('port closed');
+    promise.reject(new Error('port closed'));
   });
   pendingResponsePromises = [];
 }
@@ -336,7 +336,7 @@ function clearConnectionState() {
 /**
  * Open the serial port.
  *
- * @return {Promise<undefined>} A promise that resolves when the port opens.
+ * @return {Promise<undefined>} A promise that resolves after the port opens.
  */
 async function openPort(toOpen) {
   console.log(`Opening port baud: ${deviceState.baudRate}`);
@@ -398,7 +398,7 @@ async function reopenPort() {
 }
 
 /**
- * Open the currently selected port. If no port is current then
+ * Open the currently selected port. If no port is selected then
  * one will be requested to open.
  *
  * @return {Promise<undefined>} A promise that resolves when the port opens.
@@ -431,7 +431,9 @@ async function toggleConnectState() {
   }
   catch (ex) {
     console.error('Unable to toggle serial port: ' + ex);
-    portStatus = 'open-error';
+    if (ex.message != 'port closed') {
+      portStatus = 'open-error';
+    }
   } finally {
     setPortBannerState();
   }
