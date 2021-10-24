@@ -59,6 +59,14 @@
   color: black;
 }
 
+.open-error a {
+  color: #003c9c;
+}
+
+.open-error a:visited {
+  color: #5f007c;
+}
+
 #connect-info {
   color: rgb(216, 216, 216);
 }
@@ -69,14 +77,6 @@
 
 #connect-info a:visited {
   color: rgb(230, 164, 250);
-}
-
-.open-error a {
-  color: #003c9c;
-}
-
-.open-error a:visited {
-  color: #5f007c;
 }
 
 #connect-banner {
