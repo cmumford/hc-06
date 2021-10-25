@@ -231,13 +231,13 @@ async function setDeviceName(name) {
   deviceState.name = name;
 }
 
-async function setPin(pin) {
+async function setDevicePin(pin) {
   if (pin.length != 4) {
     throw Error('PIN length must be 4 characters');
   }
-  console.log(`Setting PIN to "${PIN}"`)
+  console.log(`Setting PIN to "${pin}"`)
   const response = await sendAtCommand(`+PIN${pin}`);
-  if (response == 'OKsetpin') {
+  if (response == 'OKsetPIN') {
     putDbData(deviceStateDb);
   } else {
     throw Error(`Unable to set PIN: \"${response}\"`);
