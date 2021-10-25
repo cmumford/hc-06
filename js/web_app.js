@@ -5,13 +5,15 @@ var deviceState = {
   pin: '1234',     // four digit number.
   mode: 'master'   // 'master' or 'slave'.
 };
-var port; // Defined only when port is open.
-var reader; // Active port reader.
+var port;    // Defined only when port is open.
+var reader;  // Active port reader.
 var lastOpenedPortInfo;
 var deviceStateDb;
 var portStatus = 'closed';  // 'closed', 'opening', 'open', and 'open-error'.
-var createdDatabase = false; // There was no settings db at page load and was created.
-var deviceUpdated = false;   // The settings were written (at least once) to device.
+var createdDatabase =
+    false;  // There was no settings db at page load and was created.
+var deviceUpdated =
+    false;  // The settings were written (at least once) to device.
 var changeNameTimeout;
 var changePinTimeout;
 var currentResponseLine = '';
@@ -51,24 +53,34 @@ function isControlChar(ch) {
   return ch === '\r' || ch === '\n';
 }
 
+function resolveResponsePromises(response) {
+  if (pendingResponsePromises.length) {
+    pendingResponsePromises.forEach((promise) => {
+      promise.resolve(response);
+    });
+    pendingResponsePromises = [];
+  } else {
+    console.warn(`Got device unexpected response: "${response}"`);
+  }
+}
+
 function handleDeviceResponseData(data) {
   const text = utf8Decoder.decode(data);
-  var i;
-  for (i = 0; i < text.length; i++) {
-    const ch = text.charAt(i);
-    if (isControlChar(ch)) {
-      while (i < text.length && isControlChar(text.charAt(i))) {
-        i += 1;
+  console.log(`Got response text: "${text}"`);
+  if (true) {
+    resolveResponsePromises(text);
+  } else {
+    for (var i = 0; i < text.length; i++) {
+      const ch = text.charAt(i);
+      if (isControlChar(ch)) {
+        while (i < text.length && isControlChar(text.charAt(i))) {
+          i += 1;
+        }
+        resolveResponsePromises(currentResponseLine);
+        currentResponseLine = '';
+      } else {
+        currentResponseLine = currentResponseLine.concat(ch);
       }
-      if (pendingResponsePromises.length) {
-        pendingResponsePromises.forEach((promise) => {
-          promise.resolve(currentResponseLine);
-        });
-        pendingResponsePromises = [];
-      }
-      currentResponseLine = '';
-    } else {
-      currentResponseLine = currentResponseLine.concat(ch);
     }
   }
 }
@@ -106,13 +118,13 @@ function getDbData(db) {
  */
 function putDbData(db) {
   var transaction = db.transaction([kDbObjStoreName], 'readwrite');
-  transaction.oncomplete = (event) => { };
+  transaction.oncomplete = (event) => {};
   transaction.onerror = (event) => {
     console.error(`Put transaction error: ${event.target.errorCode}`);
   };
   var store = transaction.objectStore(kDbObjStoreName);
   var request = store.put(deviceState, kDbPrimaryKeyValue);
-  request.onsuccess = (event) => { };
+  request.onsuccess = (event) => {};
 }
 
 // Open the device state database and read the saved device state.
@@ -163,7 +175,7 @@ async function sendAtCommand(payload) {
     // The goal is to defer resolution until the next line
     // response text is received from the device.
     // Believe this is the **wrong** way to do this.
-    pendingResponsePromises.push({ resolve: resolve, reject: reject });
+    pendingResponsePromises.push({resolve: resolve, reject: reject});
   });
 }
 
@@ -206,7 +218,7 @@ async function setDeviceName(name) {
   }
   console.log(`Setting name to "${name}"`)
   const response = await sendAtCommand(`+NAME${name}`);
-  if (response == 'OKname') {
+  if (response == 'OKsetname') {
     putDbData(deviceStateDb);
   } else {
     throw Error(`Unable to set name: \"${response}\"`);
@@ -267,7 +279,7 @@ async function readPortData() {
     try {
       reader = port.readable.getReader();
       while (true) {
-        const { value, done } = await reader.read();
+        const {value, done} = await reader.read();
         if (value) {
           handleDeviceResponseData(value);
         }
@@ -406,7 +418,8 @@ async function openCurrentPort() {
 /**
  * Toggle the open state of the currently selected serial port.
  *
- * @return {Promise<undefined>} A promise that resolves when the port opens or closes.
+ * @return {Promise<undefined>} A promise that resolves when the port opens or
+ *     closes.
  */
 async function toggleConnectState() {
   try {
@@ -419,11 +432,11 @@ async function toggleConnectState() {
       if (response) {
         portStatus = 'open';
       } else {
-        throw Error(`Device ping failed.`);;
+        throw Error(`Device ping failed.`);
+        ;
       }
     }
-  }
-  catch (ex) {
+  } catch (ex) {
     console.error('Unable to toggle serial port: ' + ex);
     if (ex.message != 'port closed') {
       portStatus = 'open-error';
@@ -573,7 +586,7 @@ async function populatePortMenu() {
       if (portMenu.options[i].port) {
         const info = await portMenu.options[i].port.getInfo();
         if (info.usbProductId == lastOpenedPortInfo.usbProductId &&
-          info.usbVendorId == lastOpenedPortInfo.usbVendorId) {
+            info.usbVendorId == lastOpenedPortInfo.usbVendorId) {
           idxToSelect = i;
           break;
         }
@@ -607,7 +620,7 @@ function onNameChanged(element) {
     changeNameTimeout = undefined;
   }
   changeNameTimeout =
-    window.setTimeout(changeNameCallback, /*milliseconds=*/ 500);
+      window.setTimeout(changeNameCallback, /*milliseconds=*/ 500);
 }
 
 /**
@@ -634,7 +647,7 @@ function onPinChanged(element) {
     changePinTimeout = undefined;
   }
   changePinTimeout =
-    window.setTimeout(changePinCallback, /*milliseconds=*/ 500);
+      window.setTimeout(changePinCallback, /*milliseconds=*/ 500);
 }
 
 /**
@@ -726,7 +739,7 @@ async function setControlState() {
  */
 function setControlValues() {
   const value =
-    parseInt(dictReverseLookup(baudAbbrevToName, deviceState.baudRate), 16);
+      parseInt(dictReverseLookup(baudAbbrevToName, deviceState.baudRate), 16);
   const index = value - 1;
   $('aligned-baud').selectedIndex = index;
 }
