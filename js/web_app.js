@@ -16,6 +16,7 @@ var deviceUpdated =
     false;  // The settings were written (at least once) to device.
 var changeNameTimeout;
 var changePinTimeout;
+var responseTimeout;
 var currentResponseLine = '';
 var pendingResponsePromises = [];
 const kDbName = 'HC-06';
@@ -53,6 +54,11 @@ function isControlChar(ch) {
   return ch === '\r' || ch === '\n';
 }
 
+/**
+ * Send the recponse text the waiting promises.
+ *
+ * @param {string} response
+ */
 function resolveResponsePromises(response) {
   if (pendingResponsePromises.length) {
     pendingResponsePromises.forEach((promise) => {
@@ -64,25 +70,24 @@ function resolveResponsePromises(response) {
   }
 }
 
+/**
+ * Process some response data from the device.
+ *
+ * @param {*} data The binary response data read from the serial port.
+ */
 function handleDeviceResponseData(data) {
-  const text = utf8Decoder.decode(data);
-  console.log(`Got response text: "${text}"`);
-  if (true) {
-    resolveResponsePromises(text);
-  } else {
-    for (var i = 0; i < text.length; i++) {
-      const ch = text.charAt(i);
-      if (isControlChar(ch)) {
-        while (i < text.length && isControlChar(text.charAt(i))) {
-          i += 1;
-        }
-        resolveResponsePromises(currentResponseLine);
-        currentResponseLine = '';
-      } else {
-        currentResponseLine = currentResponseLine.concat(ch);
-      }
-    }
+  if (responseTimeout) {
+    window.clearTimeout(responseTimeout);
+    responseTimeout = undefined;
   }
+  const text = utf8Decoder.decode(data);
+  currentResponseLine = currentResponseLine.concat(text);
+  const kResponseTimeoutMs = 100;
+  responseTimeout = window.setTimeout(() => {
+    responseTimeout = undefined;
+    resolveResponsePromises(currentResponseLine);
+    currentResponseLine = '';
+  }, kResponseTimeoutMs);
 }
 
 /**
@@ -329,6 +334,10 @@ function clearConnectionState() {
   if (changePinTimeout) {
     window.clearTimeout(changePinTimeout);
     changePinTimeout = undefined;
+  }
+  if (responseTimeout) {
+    window.clearTimeout(responseTimeout);
+    responseTimeout = undefined;
   }
 
   portStatus = 'closed';
