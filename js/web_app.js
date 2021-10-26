@@ -33,6 +33,10 @@ function $(id) {
   return document.getElementById(id);
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 /**
  * Given a dictionary value return the corresponding key.
  *
@@ -172,16 +176,18 @@ async function sendAtCommand(payload) {
   if (!isPortOpen()) {
     throw Error('Port not opened.');
   }
+  var promise = new Promise((resolve, reject) => {
+    // The goal is to defer resolution until the next line
+    // response text is received from the device.
+    // Believe this is the **wrong** way to do this.
+    pendingResponsePromises.push({ resolve: resolve, reject: reject });
+  });
+
   const write_string = payload ? 'AT' + payload : 'AT';
   const writer = port.writable.getWriter();
   await writer.write(new TextEncoder().encode(write_string));
   writer.releaseLock();
-  return new Promise((resolve, reject) => {
-    // The goal is to defer resolution until the next line
-    // response text is received from the device.
-    // Believe this is the **wrong** way to do this.
-    pendingResponsePromises.push({resolve: resolve, reject: reject});
-  });
+  return promise;
 }
 
 async function setPortBaud(baudValue) {
@@ -407,10 +413,30 @@ async function getPortToOpen() {
  * @return {Promise<undefined>} A promise that resolves when the port opens.
  */
 async function reopenPort() {
-  if (isPortOpen()) {
-    await closePort();
+  try {
+    var currentPort = port;
+    if (isPortOpen()) {
+      await closePort();
+    }
+    if (currentPort) {
+      await openPort(currentPort)
+    } else {
+      await openCurrentPort();
+    }
+    const response = await ping();
+    if (response) {
+      portStatus = 'open';
+    } else {
+      throw Error(`Device ping failed.`);
+    }
+  } catch (ex) {
+    console.error('Unable to reopen serial port: ' + ex);
+    if (ex.message != 'port closed') {
+      portStatus = 'open-error';
+    }
+  } finally {
+    setConnectBannerState();
   }
-  await openCurrentPort();
 }
 
 /**
@@ -420,8 +446,8 @@ async function reopenPort() {
  * @return {Promise<undefined>} A promise that resolves when the port opens.
  */
 async function openCurrentPort() {
-  port = await getPortToOpen();
-  await openPort(port);
+  const thePort = await getPortToOpen();
+  await openPort(thePort);
 }
 
 /**
@@ -442,7 +468,6 @@ async function toggleConnectState() {
         portStatus = 'open';
       } else {
         throw Error(`Device ping failed.`);
-        ;
       }
     }
   } catch (ex) {
@@ -506,6 +531,12 @@ async function onBaudSelected(selectObject) {
   console.log(`Selected ${value} = ${deviceState.baudRate}`);
   if (isPortOpen()) {
     await setPortBaud(value);
+    // A baud rate change on the HC-06 appears to take some time to
+    // register before opening. A short delay seems to give the
+    // device time to get into the new state. Without a delay an
+    // immediate reopen will block waiting for a ping ack.
+    await sleep(500).then(() => { console.log("Done sleeping"); });
+
     await reopenPort();
   }
 }
