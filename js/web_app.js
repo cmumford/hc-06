@@ -528,7 +528,6 @@ async function init() {
 async function onBaudSelected(selectObject) {
   const value = selectObject.value;
   deviceState.baudRate = baudAbbrevToName[value];
-  console.log(`Selected ${value} = ${deviceState.baudRate}`);
   if (isPortOpen()) {
     await setPortBaud(value);
     // A baud rate change on the HC-06 appears to take some time to
@@ -551,7 +550,6 @@ async function onBaudSelected(selectObject) {
 async function onParitySelected(selectObject) {
   const abbrev = selectObject.value;
   deviceState.parity = parityAbbrevToName[abbrev];
-  console.log(`Selected ${abbrev} = ${deviceState.parity}`);
   if (isPortOpen()) {
     await setParity(abbrev);
     await reopenPort();
@@ -569,7 +567,6 @@ async function onParitySelected(selectObject) {
 async function onRoleSelected(selectObject) {
   const abbrev = selectObject.value;
   deviceState.mode = roleAbbrevToName[abbrev];
-  console.log(`Selected ${abbrev} = ${deviceState.mode}`);
   if (isPortOpen()) {
     await setRole(abbrev);
   }
