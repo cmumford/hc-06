@@ -28,6 +28,7 @@ const parityAbbrevToName = {};  // Abbrev ("PO", etc.) to name ("odd", etc.).
 const roleAbbrevToName = {};  // Abbrev ("M", "S") to name ("master", "slave");
 const baudAbbrevToName = {};  // Abbrev ("1", "2") to name ("1200", "2400");
 const utf8Decoder = new TextDecoder();
+const utf8Encoder = new TextEncoder();
 
 function $(id) {
   return document.getElementById(id);
@@ -183,15 +184,15 @@ async function sendAtCommand(payload) {
     pendingResponsePromises.push({ resolve: resolve, reject: reject });
   });
 
-  const write_string = payload ? 'AT' + payload : 'AT';
+  const message = payload ? `AT+${payload}` : 'AT';
   const writer = port.writable.getWriter();
-  await writer.write(new TextEncoder().encode(write_string));
+  await writer.write(utf8Encoder.encode(message));
   writer.releaseLock();
   return promise;
 }
 
 async function setPortBaud(baudValue) {
-  const response = await sendAtCommand(`+BAUD${baudValue}`);
+  const response = await sendAtCommand(`BAUD${baudValue}`);
   if (response && response.startsWith('OK')) {
     putDbData(deviceStateDb);
   } else {
@@ -205,7 +206,7 @@ async function setPortBaud(baudValue) {
  * @param {string} parity One of "PN" (none), "PO" (odd), or "PE" (even).
  */
 async function setParity(parity) {
-  const response = await sendAtCommand(`+${parity}`);
+  const response = await sendAtCommand(`${parity}`);
   if (response && response.startsWith('OK')) {
     putDbData(deviceStateDb);
   } else {
@@ -219,7 +220,7 @@ async function setParity(parity) {
  * @param {string} role The role. Either "M" (master) or "S" (slave).
  */
 async function setRole(role) {
-  const response = await sendAtCommand(`+ROLE=${role}`);
+  const response = await sendAtCommand(`ROLE=${role}`);
   putDbData(deviceStateDb);
 }
 
@@ -228,7 +229,7 @@ async function setDeviceName(name) {
     throw Error('Name too long: 20 chars max');
   }
   console.log(`Setting name to "${name}"`)
-  const response = await sendAtCommand(`+NAME${name}`);
+  const response = await sendAtCommand(`NAME${name}`);
   if (response == 'OKsetname') {
     putDbData(deviceStateDb);
   } else {
@@ -242,7 +243,7 @@ async function setDevicePin(pin) {
     throw Error('PIN length must be 4 characters');
   }
   console.log(`Setting PIN to "${pin}"`)
-  const response = await sendAtCommand(`+PIN${pin}`);
+  const response = await sendAtCommand(`PIN${pin}`);
   if (response == 'OKsetPIN') {
     putDbData(deviceStateDb);
   } else {
