@@ -224,7 +224,11 @@ async function setParity(parity) {
  */
 async function setRole(role) {
   const response = await sendAtCommand(`ROLE=${role}`);
-  putDbData(deviceStateDb);
+  if (response && response.startsWith('OK')) {
+    putDbData(deviceStateDb);
+  } else {
+    throw Error(`Unable to set role: \"${response}\"`);
+  }
 }
 
 async function setDeviceName(name) {
