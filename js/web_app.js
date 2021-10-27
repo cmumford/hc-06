@@ -21,7 +21,7 @@ const WriteState = {
 
 var deviceState = {
   baudRate: 9600,  // bps.
-  parity: 'none',  // 'none', 'even', or 'odd.
+  parity: 'none',  // 'none', 'even', or 'odd'.
   name: 'HC-06',   // Device's Bluetooth name.
   pin: '1234',     // four digit number.
   mode: 'slave'    // 'master' or 'slave'.
@@ -230,7 +230,7 @@ async function setPortBaud(baudValue) {
  * @param {string} parity One of "PN" (none), "PO" (odd), or "PE" (even).
  */
 async function setParity(parity) {
-  const response = await sendAtCommand(`${parity}`);
+  const response = await sendAtCommand(parity);
   if (response && response.startsWith('OK')) {
     putDbData(deviceStateDb);
   } else {
@@ -597,12 +597,14 @@ async function onBaudSelected(selectObject) {
  */
 async function onParitySelected(selectObject) {
   const abbrev = selectObject.value;
-  deviceState.parity = parityAbbrevToName[abbrev];
+  var newParity = parityAbbrevToName[abbrev];
   if (isPortOpen()) {
     try {
       setValueWriteState(DeviceProperty.Parity, WriteState.Writing);
       await setParity(abbrev);
+      deviceState.parity = newParity;
       setValueWriteState(DeviceProperty.Parity, WriteState.Success);
+      await reopenPort();
     } catch (ex) {
       setValueWriteState(DeviceProperty.Parity, WriteState.Error);
     }
