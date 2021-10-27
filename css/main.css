@@ -87,3 +87,34 @@
 .align-right {
   text-align: right;
 }
+
+.write-status-hidden {
+  opacity: 0;
+  color: black;
+}
+
+.write-status-writing {
+  opacity: 1;
+  transition-duration: 0.25s;
+  color: orange;
+}
+
+.write-status-success {
+  opacity: 1;
+  color: green;
+  transition-duration: 0.25s;
+  animation: hideAnimation 1s linear 1s;
+  animation-fill-mode: forwards;
+}
+
+@keyframes hideAnimation {
+  to {
+    opacity: 0;
+  }
+}
+
+.write-status-error {
+  opacity: 1;
+  color: red;
+  transition-duration: 0.25s;
+}

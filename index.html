@@ -51,13 +51,13 @@
               <label for="aligned-name">Device Name</label>
               <input type="text" id="aligned-name" maxlength="20" alt="The advertized Bluetooth device name"
                 placeholder="Device name" onkeydown="onNameChanged(this)" />
-              <span class="pure-form-message-inline value-info">(Last seen value)</span>
+              <span id="name-write-status" class="pure-form-message-inline write-status-hidden"></span>
             </div>
             <div class="pure-control-group">
               <label for="aligned-pin">PIN</label>
               <input type="text" id="aligned-pin" alt="PIN for Bluetooth access" placeholder="PIN" maxlength="4"
                 onkeydown="onPinChanged(this)" />
-              <span class="pure-form-message-inline value-info">(Last seen value)</span>
+              <span id="pin-write-status" class="pure-form-message-inline write-status-hidden"></span>
             </div>
             <div class="pure-control-group">
               <label for="aligned-baud">Baud</label>
@@ -75,7 +75,7 @@
                 <option value="B">921,600</option>
                 <option value="C">1,382,400</option>
               </select>
-              <span class="pure-form-message-inline value-info">(Last seen value)</span>
+              <span id="baud-write-status" class="pure-form-message-inline write-status-hidden"></span>
             </div>
             <div class="pure-control-group">
               <label for="aligned-parity">Parity</label>
@@ -84,7 +84,7 @@
                 <option value="PO">odd</option>
                 <option value="PE">even</option>
               </select>
-              <span class="pure-form-message-inline value-info">(Last seen value)</span>
+              <span id="parity-write-status" class="pure-form-message-inline write-status-hidden"></span>
             </div>
             <div class="pure-control-group">
               <label for="aligned-role">Role</label>
@@ -92,7 +92,7 @@
                 <option value="M">master</option>
                 <option value="S" selected>slave</option>
               </select>
-              <span class="pure-form-message-inline value-info">(Last seen value)</span>
+              <span id="role-write-status" class="pure-form-message-inline write-status-hidden"></span>
             </div>
           </fieldset>
         </form>
