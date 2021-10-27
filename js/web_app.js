@@ -186,8 +186,11 @@ async function sendAtCommand(payload) {
 
   const message = payload ? `AT+${payload}` : 'AT';
   const writer = port.writable.getWriter();
-  await writer.write(utf8Encoder.encode(message));
-  writer.releaseLock();
+  try {
+    await writer.write(utf8Encoder.encode(message));
+  } finally {
+    writer.releaseLock();
+  }
   return promise;
 }
 
