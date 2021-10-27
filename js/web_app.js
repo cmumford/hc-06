@@ -582,7 +582,7 @@ async function onBaudSelected(selectObject) {
     // register before opening. A short delay seems to give the
     // device time to get into the new state. Without a delay an
     // immediate reopen will block waiting for a ping ack.
-    await sleep(500).then(() => { console.log("Done sleeping"); });
+    await sleep(1000).then(() => { console.log("Done sleeping"); });
 
     await reopenPort();
   }
