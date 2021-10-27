@@ -3,7 +3,7 @@ var deviceState = {
   parity: 'none',  // 'none', 'even', or 'odd.
   name: 'HC-06',   // Device's Bluetooth name.
   pin: '1234',     // four digit number.
-  mode: 'master'   // 'master' or 'slave'.
+  mode: 'slave'    // 'master' or 'slave'.
 };
 var port;    // Defined only when port is open.
 var reader;  // Active port reader.
