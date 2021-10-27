@@ -659,8 +659,10 @@ function changeNameCallback() {
   changeNameTimeout = undefined;
 
   const name = $('aligned-name').value;
-  console.log(`Setting device name to "${name}"`);
-  setDeviceName(name);
+  if (name.length > 0 && name.length <= 20) {
+    console.log(`Setting device name to "${name}"`);
+    setDeviceName(name);
+  }
 }
 
 /**
