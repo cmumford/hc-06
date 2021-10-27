@@ -265,6 +265,15 @@ async function ping() {
   return response == 'OK';
 }
 
+async function getVersion() {
+  const response = await sendAtCommand('VERSION');
+  if (!response.startsWith('OK')) {
+    return undefined;
+  }
+
+  return response.substr(2);
+}
+
 /**
  * Close the serial port.
  *
