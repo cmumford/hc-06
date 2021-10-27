@@ -413,11 +413,28 @@ function getSelectedPort() {
  * @returns {object} The port to open.
  */
 async function getPortToOpen() {
-  port = getSelectedPort();
-  if (port) {
-    return port;
+  var selectedPort = getSelectedPort();
+  if (selectedPort) {
+    return selectedPort;
   }
   return await navigator.serial.requestPort();
+}
+
+/**
+ * Open the serial port and verify the device is responsive.
+ *
+ * @param {object} thePort
+ */
+async function openPortVerifyDevice(thePort) {
+  await openPort(thePort);
+  const response = await ping();
+  if (response) {
+    portStatus = 'open';
+  } else {
+    throw Error(`Device ping failed.`);
+  }
+  const version = await getVersion();
+  console.log(`version: "${version}"`);
 }
 
 /**
@@ -427,21 +444,18 @@ async function getPortToOpen() {
  */
 async function reopenPort() {
   try {
-    var currentPort = port;
+    var portToOpen = port;
     if (isPortOpen()) {
       await closePort();
     }
-    if (currentPort) {
-      await openPort(currentPort)
-    } else {
-      await openCurrentPort();
+    if (!portToOpen) {  // If not one previously open.
+      portToOpen = await getPortToOpen();
+      if (!portToOpen) {
+        throw Error(`No port to open`);
+      }
     }
-    const response = await ping();
-    if (response) {
-      portStatus = 'open';
-    } else {
-      throw Error(`Device ping failed.`);
-    }
+
+    await openPortVerifyDevice(portToOpen);
   } catch (ex) {
     console.error('Unable to reopen serial port: ' + ex);
     if (ex.message != 'port closed') {
@@ -450,17 +464,6 @@ async function reopenPort() {
   } finally {
     setConnectBannerState();
   }
-}
-
-/**
- * Open the currently selected port. If no port is selected then
- * one will be requested to open.
- *
- * @return {Promise<undefined>} A promise that resolves when the port opens.
- */
-async function openCurrentPort() {
-  const thePort = await getPortToOpen();
-  await openPort(thePort);
 }
 
 /**
@@ -475,13 +478,11 @@ async function toggleConnectState() {
       closePort();
     } else {
       portStatus = 'opening';
-      await openCurrentPort();
-      const response = await ping();
-      if (response) {
-        portStatus = 'open';
-      } else {
-        throw Error(`Device ping failed.`);
+      const portToOpen = await getPortToOpen();
+      if (!portToOpen) {
+        throw Error(`No port to open`);
       }
+      await openPortVerifyDevice(portToOpen);
     }
   } catch (ex) {
     console.error('Unable to toggle serial port: ' + ex);
