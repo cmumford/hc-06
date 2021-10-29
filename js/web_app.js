@@ -470,8 +470,8 @@ async function sleepDeviceCommandInterval() {
  */
 async function openPortVerifyDevice(thePort) {
   await openPort(thePort);
-  const response = await ping();
-  if (response) {
+  const gotResponse = await ping();
+  if (gotResponse) {
     portStatus = 'open';
   } else {
     throw Error(`Device ping failed.`);
