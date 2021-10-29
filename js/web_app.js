@@ -294,11 +294,12 @@ async function ping() {
 
 async function getVersion() {
   const response = await sendAtCommand('VERSION');
-  if (!response.startsWith('OK')) {
-    return undefined;
+  // Some devices echo back OK before version, others do not.
+  if (response.startsWith('OK')) {
+    return response.substr(2);
+  } else {
+    return response;
   }
-
-  return response.substr(2);
 }
 
 /**
