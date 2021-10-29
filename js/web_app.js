@@ -260,7 +260,7 @@ async function setDeviceName(name) {
     throw Error('Name too long: 20 chars max');
   }
   const response = await sendAtCommand(`NAME${name}`);
-  if (response == 'OKsetname') {
+  if (response == 'OKsetname' || response == 'OKname') {
     putDbData(deviceStateDb);
   } else {
     throw Error(`Unable to set name: \"${response}\"`);
