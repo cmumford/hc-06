@@ -102,11 +102,14 @@ function resolveResponsePromises(response) {
  * @param {*} data The binary response data read from the serial port.
  */
 function handleDeviceResponseData(data) {
+  const text = utf8Decoder.decode(data).trim();
+  if (text.length == 0) {
+    return;
+  }
   if (responseTimeout) {
     window.clearTimeout(responseTimeout);
     responseTimeout = undefined;
   }
-  const text = utf8Decoder.decode(data);
   currentResponseLine = currentResponseLine.concat(text);
   const kResponseTimeoutMs = 100;
   responseTimeout = window.setTimeout(() => {
