@@ -452,6 +452,18 @@ async function getPortToOpen() {
 }
 
 /**
+ * Processing of some commands on *some* HC-06's appears to take some
+ * time to complete. If commands are run back-to-back then we must
+ * add a delay for the HC-06 to return to a state where it is ready to
+ * execute the next command. Otherwise the next command-request hangs.
+ *
+ * This is empirically determined. Not documented in datasheet.
+ */
+async function sleepDeviceCommandInterval() {
+  await sleep(1000);
+}
+
+/**
  * Open the serial port and verify the device is responsive.
  *
  * @param {object} thePort
@@ -464,6 +476,7 @@ async function openPortVerifyDevice(thePort) {
   } else {
     throw Error(`Device ping failed.`);
   }
+  await sleepDeviceCommandInterval();
   const version = await getVersion();
   console.log(`version: "${version}"`);
 }
@@ -486,6 +499,7 @@ async function reopenPort() {
       }
     }
 
+    await sleepDeviceCommandInterval();
     await openPortVerifyDevice(portToOpen);
   } catch (ex) {
     console.error('Unable to reopen serial port: ' + ex);
@@ -581,11 +595,8 @@ async function onBaudSelected(selectObject) {
     } catch (ex) {
       setValueWriteState(DeviceProperty.Baud, WriteState.Error);
     }
-    // A baud rate change on the HC-06 appears to take some time to
-    // register before opening. A short delay seems to give the
-    // device time to get into the new state. Without a delay an
-    // immediate reopen will block waiting for a ping ack.
-    await sleep(1000).then(() => { console.log("Done sleeping"); });
+
+    await sleepDeviceCommandInterval();
 
     await reopenPort();
   }
