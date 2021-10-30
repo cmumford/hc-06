@@ -86,6 +86,7 @@ function isControlChar(ch) {
  * @param {string} response The response text from the device.
  */
 function resolveResponsePromises(response) {
+  console.log(`Got response: "${response}"`);
   if (pendingResponsePromises.length) {
     pendingResponsePromises.forEach((promise) => {
       promise.resolve(response);
@@ -207,7 +208,7 @@ function isPortOpen() {
  */
 async function sendAtCommand(payload) {
   if (!isPortOpen()) {
-    throw Error('Port not opened.');
+    throw new Error('Port not opened.');
   }
   var promise = new Promise((resolve, reject) => {
     // The goal is to defer resolution until the next line
@@ -228,10 +229,8 @@ async function sendAtCommand(payload) {
 
 async function setPortBaud(baudValue) {
   const response = await sendAtCommand(`BAUD${baudValue}`);
-  if (response && response.startsWith('OK')) {
-    await putDbData(deviceStateDb);
-  } else {
-    throw Error(`Unable to set baud: \"${response}\"`);
+  if (!response || !response.startsWith('OK')) {
+    throw new Error(`Unable to set baud: \"${response}\"`);
   }
 }
 
@@ -242,10 +241,8 @@ async function setPortBaud(baudValue) {
  */
 async function setParity(parity) {
   const response = await sendAtCommand(parity);
-  if (response && response.startsWith('OK')) {
-    await putDbData(deviceStateDb);
-  } else {
-    throw Error(`Unable to set parity: \"${response}\"`);
+  if (!response || !response.startsWith('OK')) {
+    throw new Error(`Unable to set parity: \"${response}\"`);
   }
 }
 
@@ -256,38 +253,30 @@ async function setParity(parity) {
  */
 async function setRole(role) {
   const response = await sendAtCommand(`ROLE=${role}`);
-  if (response && response.startsWith('OK')) {
-    await putDbData(deviceStateDb);
-  } else {
-    throw Error(`Unable to set role: \"${response}\"`);
+  if (!response || !response.startsWith('OK')) {
+    throw new Error(`Unable to set role: \"${response}\"`);
   }
 }
 
 async function setDeviceName(name) {
   if (name.length > 20) {
-    throw Error('Name too long: 20 chars max');
+    throw new Error('Name too long: 20 chars max');
   }
   const response = await sendAtCommand(`NAME${name}`);
-  if (response == 'OKsetname' || response == 'OKname') {
-    await putDbData(deviceStateDb);
-  } else {
-    throw Error(`Unable to set name: \"${response}\"`);
+  if (!response || (response != 'OKsetname' && response != 'OKname')) {
+    throw new Error(`Unable to set name: \"${response}\"`);
   }
-  deviceState.name = name;
 }
 
 async function setDevicePin(pin) {
   if (pin.length != 4) {
-    throw Error('PIN length must be 4 characters');
+    throw new Error('PIN length must be 4 characters');
   }
-  console.log(`Setting PIN to "${pin}"`)
   const response = await sendAtCommand(`PIN${pin}`);
-  if (response == 'OKsetPIN') {
-    await putDbData(deviceStateDb);
-  } else {
-    throw Error(`Unable to set PIN: \"${response}\"`);
+  console.log(response);
+  if (!response || response.toLowerCase() != 'oksetpin') {
+    reject(`Unable to set PIN: \"${response}\"`);
   }
-  deviceState.pin = pin;
 }
 
 /**
@@ -483,11 +472,11 @@ async function openPortVerifyDevice(thePort) {
   if (gotResponse) {
     portStatus = 'open';
   } else {
-    throw Error(`Device ping failed.`);
+    throw new Error(`Device ping failed.`);
   }
   await sleepDeviceCommandInterval();
   const version = await getVersion();
-  console.log(`version: "${version}"`);
+  console.info(`version: "${version}"`);
 }
 
 /**
@@ -504,7 +493,7 @@ async function reopenPort() {
     if (!portToOpen) {  // If not one previously open.
       portToOpen = await getPortToOpen();
       if (!portToOpen) {
-        throw Error(`No port to open`);
+        throw new Error(`No port to open`);
       }
     }
 
@@ -534,7 +523,7 @@ async function toggleConnectState() {
       portStatus = 'opening';
       const portToOpen = await getPortToOpen();
       if (!portToOpen) {
-        throw Error(`No port to open`);
+        throw new Error(`No port to open`);
       }
       await openPortVerifyDevice(portToOpen);
     }
@@ -600,6 +589,7 @@ async function onBaudSelected(selectObject) {
     try {
       setValueWriteState(DeviceProperty.Baud, WriteState.Writing);
       await setPortBaud(value);
+      await putDbData(deviceStateDb);
       setValueWriteState(DeviceProperty.Baud, WriteState.Success);
     } catch (ex) {
       setValueWriteState(DeviceProperty.Baud, WriteState.Error);
@@ -626,6 +616,7 @@ async function onParitySelected(selectObject) {
       setValueWriteState(DeviceProperty.Parity, WriteState.Writing);
       await setParity(abbrev);
       deviceState.parity = newParity;
+      await putDbData(deviceStateDb);
       setValueWriteState(DeviceProperty.Parity, WriteState.Success);
       await reopenPort();
     } catch (ex) {
@@ -645,11 +636,12 @@ async function onParitySelected(selectObject) {
  */
 async function onRoleSelected(selectObject) {
   const abbrev = selectObject.value;
-  deviceState.mode = roleAbbrevToName[abbrev];
   if (isPortOpen()) {
     try {
       setValueWriteState(DeviceProperty.Role, WriteState.Writing);
       await setRole(abbrev);
+      deviceState.mode = roleAbbrevToName[abbrev];
+      await putDbData(deviceStateDb);
       setValueWriteState(DeviceProperty.Role, WriteState.Success);
     } catch (ex) {
       setValueWriteState(DeviceProperty.Role, WriteState.Error);
@@ -731,6 +723,8 @@ async function changeNameCallback() {
     try {
       setValueWriteState(DeviceProperty.Name, WriteState.Writing);
       await setDeviceName(name);
+      deviceState.name = name;
+      await putDbData(deviceStateDb);
       setValueWriteState(DeviceProperty.Name, WriteState.Success);
     } catch (ex) {
       setValueWriteState(DeviceProperty.Name, WriteState.Error);
@@ -765,6 +759,8 @@ async function changePinCallback() {
   try {
     setValueWriteState(DeviceProperty.PIN, WriteState.Writing);
     await setDevicePin(pin);
+    deviceState.pin = pin;
+    await putDbData(deviceStateDb);
     setValueWriteState(DeviceProperty.PIN, WriteState.Success);
   } catch (ex) {
     setValueWriteState(DeviceProperty.PIN, WriteState.Error);
