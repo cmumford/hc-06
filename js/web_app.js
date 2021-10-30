@@ -129,22 +129,23 @@ function isWebSerialSupported() {
 }
 
 /**
- * Write the current device state to the database.
+ * Read the saved device state from the database.
+ *
+ * @param {object} db The open Indexed DB.
+ * @returns {Promise<object>} A promise that resolves to the database state dictionary.
  */
 function getDbData(db) {
-  var transaction = db.transaction([kDbObjStoreName], 'readwrite');
-  transaction.oncomplete = (event) => {
-    setControlValues();
-  };
-  transaction.onerror = (event) => {
-    console.error(`Get transaction error: ${event.target.errorCode}`);
-  };
-  var store = transaction.objectStore(kDbObjStoreName);
-  var request = store.get(kDbPrimaryKeyValue);
-  request.onsuccess = (event) => {
-    deviceState = request.result;
-    setControlState();
-  };
+  return new Promise((resolve, reject) => {
+    var transaction = db.transaction([kDbObjStoreName], 'readwrite');
+    transaction.onerror = (event) => {
+      reject(`Get transaction error: ${event.target.errorCode}`);
+    };
+    var store = transaction.objectStore(kDbObjStoreName);
+    var request = store.get(kDbPrimaryKeyValue);
+    request.onsuccess = (event) => {
+      resolve(request.result);
+    };
+  });
 }
 
 /**
@@ -169,7 +170,9 @@ function loadSavedDeviceState() {
   };
   dbOpenRequest.onsuccess = async (event) => {
     deviceStateDb = event.target.result;
-    getDbData(event.target.result);
+    deviceState = await getDbData(event.target.result);
+    setControlValues();
+    setControlState();
   };
   dbOpenRequest.onupgradeneeded = (event) => {
     console.log('Created device state database.');
