@@ -149,17 +149,22 @@ function getDbData(db) {
 }
 
 /**
- * Read the current device state from the database.
+ * Write the current device state to the database.
+ *
+ * @param {object} db An open Indexed DB.
+ * @returns {Promise<undefined>} A promise that resolves when writing completed.
  */
 function putDbData(db) {
-  var transaction = db.transaction([kDbObjStoreName], 'readwrite');
-  transaction.oncomplete = (event) => { };
-  transaction.onerror = (event) => {
-    console.error(`Put transaction error: ${event.target.errorCode}`);
-  };
-  var store = transaction.objectStore(kDbObjStoreName);
-  var request = store.put(deviceState, kDbPrimaryKeyValue);
-  request.onsuccess = (event) => { };
+  return new Promise((resolve, reject) => {
+    var transaction = db.transaction([kDbObjStoreName], 'readwrite');
+    transaction.onerror = (event) => {
+      reject(`Put transaction error: ${event.target.errorCode}`);
+    };
+    var store = transaction.objectStore(kDbObjStoreName);
+    var request = store.put(deviceState, kDbPrimaryKeyValue);
+    request.onsuccess = resolve;
+  });
+
 }
 
 // Open the device state database and read the saved device state.
@@ -179,8 +184,8 @@ function loadSavedDeviceState() {
     createdDatabase = true;
     var db = event.target.result;
     var objectStore = db.createObjectStore(kDbObjStoreName);
-    objectStore.transaction.oncomplete = (event) => {
-      putDbData(db);
+    objectStore.transaction.oncomplete = async (event) => {
+      await putDbData(db);
     };
   };
 }
@@ -224,7 +229,7 @@ async function sendAtCommand(payload) {
 async function setPortBaud(baudValue) {
   const response = await sendAtCommand(`BAUD${baudValue}`);
   if (response && response.startsWith('OK')) {
-    putDbData(deviceStateDb);
+    await putDbData(deviceStateDb);
   } else {
     throw Error(`Unable to set baud: \"${response}\"`);
   }
@@ -238,7 +243,7 @@ async function setPortBaud(baudValue) {
 async function setParity(parity) {
   const response = await sendAtCommand(parity);
   if (response && response.startsWith('OK')) {
-    putDbData(deviceStateDb);
+    await putDbData(deviceStateDb);
   } else {
     throw Error(`Unable to set parity: \"${response}\"`);
   }
@@ -252,7 +257,7 @@ async function setParity(parity) {
 async function setRole(role) {
   const response = await sendAtCommand(`ROLE=${role}`);
   if (response && response.startsWith('OK')) {
-    putDbData(deviceStateDb);
+    await putDbData(deviceStateDb);
   } else {
     throw Error(`Unable to set role: \"${response}\"`);
   }
@@ -264,7 +269,7 @@ async function setDeviceName(name) {
   }
   const response = await sendAtCommand(`NAME${name}`);
   if (response == 'OKsetname' || response == 'OKname') {
-    putDbData(deviceStateDb);
+    await putDbData(deviceStateDb);
   } else {
     throw Error(`Unable to set name: \"${response}\"`);
   }
@@ -278,7 +283,7 @@ async function setDevicePin(pin) {
   console.log(`Setting PIN to "${pin}"`)
   const response = await sendAtCommand(`PIN${pin}`);
   if (response == 'OKsetPIN') {
-    putDbData(deviceStateDb);
+    await putDbData(deviceStateDb);
   } else {
     throw Error(`Unable to set PIN: \"${response}\"`);
   }
@@ -423,7 +428,7 @@ async function openPort(toOpen) {
     lastOpenedPortInfo = await port.getInfo();
     deviceUpdated = false;
     startPortReader();
-    putDbData(deviceStateDb);
+    await putDbData(deviceStateDb);
   } finally {
     setControlState();
   }
