@@ -83,10 +83,6 @@ function dictReverseLookup(dict, value) {
   return foundValue;
 }
 
-function isControlChar(ch) {
-  return ch === '\r' || ch === '\n';
-}
-
 /**
  * Send the response text to the pending promises.
  *
