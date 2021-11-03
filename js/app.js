@@ -38,10 +38,6 @@ let reader;  // Active port reader.
 let lastOpenedPortInfo;
 let deviceStateDb;
 let portStatus = PortStatus.Closed;
-let createdDatabase =
-  false;  // There was no settings db at page load and was created.
-let deviceUpdated =
-  false;  // The settings were written (at least once) to device.
 let changeNameTimeout;
 let changePinTimeout;
 let responseTimeout;
@@ -185,7 +181,6 @@ function loadSavedDeviceState() {
   };
   dbOpenRequest.onupgradeneeded = (event) => {
     console.log('Created device state database.');
-    createdDatabase = true;
     let db = event.target.result;
     let objectStore = db.createObjectStore(kDbObjStoreName);
     objectStore.transaction.oncomplete = async (event) => {
@@ -373,7 +368,6 @@ function startPortReader() {
  * with a closed serial port.
  */
 function clearConnectionState() {
-  deviceUpdated = false;
   if (changeNameTimeout) {
     window.clearTimeout(changeNameTimeout);
     changeNameTimeout = undefined;
@@ -418,7 +412,6 @@ async function openPort(toOpen) {
     });
     port = toOpen;
     lastOpenedPortInfo = await port.getInfo();
-    deviceUpdated = false;
     startPortReader();
     await putDbData(deviceStateDb);
   } finally {
