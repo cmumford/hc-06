@@ -26,27 +26,27 @@ const PortStatus = {
   OpenError: 'open-error'
 };
 
-var deviceState = {
+let deviceState = {
   baudRate: 9600,  // bps.
   parity: 'none',  // 'none', 'even', or 'odd'.
   name: 'HC-06',   // Device's Bluetooth name.
   pin: '1234',     // four digit number.
   mode: 'slave'    // 'master' or 'slave'.
 };
-var port;    // Defined only when port is open.
-var reader;  // Active port reader.
-var lastOpenedPortInfo;
-var deviceStateDb;
-var portStatus = PortStatus.Closed;
-var createdDatabase =
+let port;    // Defined only when port is open.
+let reader;  // Active port reader.
+let lastOpenedPortInfo;
+let deviceStateDb;
+let portStatus = PortStatus.Closed;
+let createdDatabase =
   false;  // There was no settings db at page load and was created.
-var deviceUpdated =
+let deviceUpdated =
   false;  // The settings were written (at least once) to device.
-var changeNameTimeout;
-var changePinTimeout;
-var responseTimeout;
-var currentResponseLine = '';
-var pendingResponsePromises = [];
+let changeNameTimeout;
+let changePinTimeout;
+let responseTimeout;
+let currentResponseLine = '';
+let pendingResponsePromises = [];
 const kDbName = 'HC-06';
 const kDbVersion = 1;
 const kDbObjStoreName = 'state';
@@ -140,12 +140,12 @@ function isWebSerialSupported() {
  */
 function getDbData(db) {
   return new Promise((resolve, reject) => {
-    var transaction = db.transaction([kDbObjStoreName], 'readwrite');
+    let transaction = db.transaction([kDbObjStoreName], 'readwrite');
     transaction.onerror = (event) => {
       reject(`Get transaction error: ${event.target.errorCode}`);
     };
-    var store = transaction.objectStore(kDbObjStoreName);
-    var request = store.get(kDbPrimaryKeyValue);
+    let store = transaction.objectStore(kDbObjStoreName);
+    let request = store.get(kDbPrimaryKeyValue);
     request.onsuccess = (event) => {
       resolve(request.result);
     };
@@ -160,12 +160,12 @@ function getDbData(db) {
  */
 function putDbData(db) {
   return new Promise((resolve, reject) => {
-    var transaction = db.transaction([kDbObjStoreName], 'readwrite');
+    let transaction = db.transaction([kDbObjStoreName], 'readwrite');
     transaction.onerror = (event) => {
       reject(`Put transaction error: ${event.target.errorCode}`);
     };
-    var store = transaction.objectStore(kDbObjStoreName);
-    var request = store.put(deviceState, kDbPrimaryKeyValue);
+    let store = transaction.objectStore(kDbObjStoreName);
+    let request = store.put(deviceState, kDbPrimaryKeyValue);
     request.onsuccess = resolve;
   });
 
@@ -173,7 +173,7 @@ function putDbData(db) {
 
 // Open the device state database and read the saved device state.
 function loadSavedDeviceState() {
-  var dbOpenRequest = window.indexedDB.open(kDbName, kDbVersion);
+  let dbOpenRequest = window.indexedDB.open(kDbName, kDbVersion);
   dbOpenRequest.onerror = (event) => {
     console.error(`Error opening device db, err: ${event.target.errorCode}`);
   };
@@ -186,8 +186,8 @@ function loadSavedDeviceState() {
   dbOpenRequest.onupgradeneeded = (event) => {
     console.log('Created device state database.');
     createdDatabase = true;
-    var db = event.target.result;
-    var objectStore = db.createObjectStore(kDbObjStoreName);
+    let db = event.target.result;
+    let objectStore = db.createObjectStore(kDbObjStoreName);
     objectStore.transaction.oncomplete = async (event) => {
       await putDbData(db);
     };
@@ -213,7 +213,7 @@ async function sendAtCommand(payload) {
   if (!isPortOpen()) {
     throw new Error('Port not opened.');
   }
-  var promise = new Promise((resolve, reject) => {
+  let promise = new Promise((resolve, reject) => {
     // The goal is to defer resolution until the next line
     // response text is received from the device.
     // Believe this is the **wrong** way to do this.
@@ -445,7 +445,7 @@ function getSelectedPort() {
  * @returns {object} The port to open.
  */
 async function getPortToOpen() {
-  var selectedPort = getSelectedPort();
+  let selectedPort = getSelectedPort();
   if (selectedPort) {
     return selectedPort;
   }
@@ -489,7 +489,7 @@ async function openPortVerifyDevice(thePort) {
  */
 async function reopenPort() {
   try {
-    var portToOpen = port;
+    let portToOpen = port;
     if (isPortOpen()) {
       await closePort();
     }
@@ -613,7 +613,7 @@ async function onBaudSelected(selectObject) {
  */
 async function onParitySelected(selectObject) {
   const abbrev = selectObject.value;
-  var newParity = parityAbbrevToName[abbrev];
+  let newParity = parityAbbrevToName[abbrev];
   if (isPortOpen()) {
     try {
       setValueWriteState(DeviceProperty.Parity, WriteState.Writing);
@@ -674,7 +674,7 @@ function getMenuValues() {
  */
 async function populatePortMenu() {
   const portMenu = $('connection-port');
-  var i, L = portMenu.options.length - 1;
+  let i, L = portMenu.options.length - 1;
   for (i = L; i >= 0; i--) {
     portMenu.remove(i);
   }
@@ -683,7 +683,7 @@ async function populatePortMenu() {
   if (ports.length == 0) {
     return;
   }
-  var option;
+  let option;
   ports.forEach(port => {
     option = document.createElement('option');
     const portInfo = port.getInfo();
@@ -697,7 +697,7 @@ async function populatePortMenu() {
   option.port = null;
   portMenu.add(option);
 
-  var idxToSelect = 0;
+  let idxToSelect = 0;
   if (lastOpenedPortInfo) {
     for (i = 0; i < portMenu.options.length; i++) {
       if (portMenu.options[i].port) {
@@ -789,8 +789,8 @@ function onPinChanged(element) {
  * Set the state of the connect banner.
  */
 function setConnectBannerState() {
-  var toggleConnect = $('toggle-connect');
-  var connectBanner = $('connect-banner');
+  let toggleConnect = $('toggle-connect');
+  let connectBanner = $('connect-banner');
   const banner_styles = [
     'closed',
     'open-error',
