@@ -20,10 +20,10 @@ const WriteState = {
 };
 
 const PortStatus = {
-  Closed: 'closed',
-  Opening: 'opening',
-  Open: 'open',
-  OpenError: 'open-error'
+  CLOSED: 'closed',
+  OPENING: 'opening',
+  OPEN: 'open',
+  OPEN_ERROR: 'open-error'
 };
 
 let deviceState = {
@@ -37,7 +37,7 @@ let port;    // Defined only when port is open.
 let reader;  // Active port reader.
 let lastOpenedPortInfo;
 let deviceStateDb;
-let portStatus = PortStatus.Closed;
+let portStatus = PortStatus.CLOSED;
 let changeNameTimeout;
 let changePinTimeout;
 let responseTimeout;
@@ -382,7 +382,7 @@ function clearConnectionState() {
     responseTimeout = undefined;
   }
 
-  portStatus = PortStatus.Closed;
+  portStatus = PortStatus.CLOSED;
   deviceVersion = undefined;
 
   currentResponseLine = '';
@@ -404,7 +404,7 @@ function clearConnectionState() {
 async function openPort(toOpen) {
   console.log(`Opening port baud: ${deviceState.baudRate}`);
   try {
-    portStatus = PortStatus.Opening;
+    portStatus = PortStatus.OPENING;
     await toOpen.open({
       baudRate: deviceState.baudRate,
       parity: deviceState.parity,
@@ -469,7 +469,7 @@ async function openPortVerifyDevice(thePort) {
   deviceVersion = await getVersion();
   if (deviceVersion) {
     console.info(`version: "${deviceVersion}"`);
-    portStatus = PortStatus.Open;
+    portStatus = PortStatus.OPEN;
   } else {
     throw new Error(`Unable to get version`);
   }
@@ -498,7 +498,7 @@ async function reopenPort() {
   } catch (ex) {
     console.error('Unable to reopen serial port: ' + ex);
     if (ex.message != 'port closed') {
-      portStatus = PortStatus.OpenError;
+      portStatus = PortStatus.OPEN_ERROR;
     }
   } finally {
     setControlState();
@@ -516,7 +516,7 @@ async function toggleConnectState() {
     if (isPortOpen()) {
       closePort();
     } else {
-      portStatus = PortStatus.Opening;
+      portStatus = PortStatus.OPENING;
       const portToOpen = await getPortToOpen();
       if (!portToOpen) {
         throw new Error(`No port to open`);
@@ -526,7 +526,7 @@ async function toggleConnectState() {
   } catch (ex) {
     console.error('Unable to toggle serial port: ' + ex);
     if (ex.message != 'port closed') {
-      portStatus = PortStatus.OpenError;
+      portStatus = PortStatus.OPEN_ERROR;
     }
   } finally {
     setControlState();
@@ -796,9 +796,9 @@ function setConnectBannerState() {
 
   if (isPortOpen()) {
     toggleConnect.innerText = 'Disconnect';
-    if (portStatus == PortStatus.Opening) {
+    if (portStatus == PortStatus.OPENING) {
       connectBanner.classList.add('opening');
-    } else if (portStatus == PortStatus.OpenError) {
+    } else if (portStatus == PortStatus.OPEN_ERROR) {
       connectBanner.classList.add('open-error');
     } else {
       connectBanner.classList.add('opened');
@@ -806,7 +806,7 @@ function setConnectBannerState() {
     $('connect-info').style.visibility = 'hidden';
   } else {
     toggleConnect.innerText = 'Connect';
-    if (portStatus == PortStatus.OpenError) {
+    if (portStatus == PortStatus.OPEN_ERROR) {
       connectBanner.classList.add('open-error');
     } else {
       connectBanner.classList.add('closed');
