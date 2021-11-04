@@ -29,7 +29,7 @@ roles = {
 
 def HandleCommandData(data):
     if data == 'VERSION':
-        sys.stdout.write('LinvorV1.8')
+        sys.stdout.write('HC06SimV1.0')
     elif data.startswith('BAUD'):
         baud = data[4:]
         if baud in bauds:
