@@ -27,6 +27,30 @@ roles = {
     'M': 'MASTER',
 }
 
+def HandleCommandData(data):
+    if data == 'VERSION':
+        sys.stdout.write('LinvorV1.8')
+    elif data.startswith('BAUD'):
+        baud = data[4:]
+        if baud in bauds:
+            sys.stdout.write('OK%s' % bauds[baud])
+        else:
+            sys.stdout.write("Unknown baud: '%s'" % baud)
+    elif data.startswith('NAME'):
+        sys.stdout.write('OKname')
+    elif data.startswith('PIN'):
+        sys.stdout.write('OKsetpin')
+    elif data.startswith('ROLE='):
+        mode = data[5:]
+        if mode in roles:
+            sys.stdout.write('OK+ROLE:%s' % mode)
+        else:
+            sys.stdout.write('Bad ROLE: "%s"' % mode)
+    elif data in parities:
+        sys.stdout.write('OK %s' % parities[data])
+    else:
+        sys.stdout.write('Unknown msg: "%s"' % data)
+
 while True:
     input_chars = []
     while supervisor.runtime.serial_bytes_available:
@@ -38,28 +62,6 @@ while True:
             sys.stdout.write('OK')
         else:
             if input_cmd.startswith('AT+'):
-                data = input_cmd[3:]
-                if data == 'VERSION':
-                    sys.stdout.write('LinvorV1.8')
-                elif data.startswith('BAUD'):
-                    baud = data[4:]
-                    if baud in bauds:
-                        sys.stdout.write('OK%s' % bauds[baud])
-                    else:
-                        sys.stdout.write("Unknown baud: '%s'" % baud)
-                elif data.startswith('NAME'):
-                    sys.stdout.write('OKname')
-                elif data.startswith('PIN'):
-                    sys.stdout.write('OKsetpin')
-                elif data.startswith('ROLE='):
-                    mode = data[5:]
-                    if mode in roles:
-                        sys.stdout.write('OK+ROLE:%s' % mode)
-                    else:
-                        sys.stdout.write('Bad ROLE: "%s"' % mode)
-                elif data in parities:
-                    sys.stdout.write('OK %s' % parities[data])
-                else:
-                    sys.stdout.write('Unknown msg: "%s"' % data)
+                HandleCommandData(input_cmd[3:])
             else:
                 sys.stdout.write('Unknown cmd: "%s"' % input_cmd)
