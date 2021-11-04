@@ -618,7 +618,6 @@ async function onParitySelected(selectObject) {
     } catch (ex) {
       setValueWriteState(DeviceProperty.Parity, WriteState.Error);
     }
-    await reopenPort();
   }
 }
 
