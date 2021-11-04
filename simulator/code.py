@@ -1,6 +1,14 @@
 import supervisor
 import sys
 
+# This is a very basic simulator for the HC-06. It runs
+# on CircuitPython (https://circuitpython.org/). It only
+# attempts to respond to the AT commands the same as the
+# HC-06. It does not do anywithing with Bluetooth.
+#
+# Note: This app will accept inbound connection with any
+# baud and parity.
+
 bauds = {
     '1': '1200',
     '2': '2400',
@@ -27,6 +35,13 @@ roles = {
     'M': 'MASTER',
 }
 
+# See datasheet:
+# https://drive.google.com/file/d/0B4urklB65vaCN1pSdHZQTjFPZzQ/view
+# for explanation of AT commands.
+#
+# Note: There are at least two different versions of the HC-06
+#       currently in production. They do respond slightly differently
+#       to the AT commands.
 def HandleCommandData(data):
     if data == 'VERSION':
         sys.stdout.write('HC06SimV1.0')
@@ -49,7 +64,7 @@ def HandleCommandData(data):
     elif data in parities:
         sys.stdout.write('OK %s' % parities[data])
     else:
-        sys.stdout.write('Unknown msg: "%s"' % data)
+        sys.stdout.write('Unknown data: "%s"' % data)
 
 while True:
     input_chars = []
