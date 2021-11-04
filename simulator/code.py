@@ -1,6 +1,33 @@
 import supervisor
 import sys
 
+bauds = {
+    '1': '1200',
+    '2': '2400',
+    '3': '4800',
+    '4': '9600',
+    '5': '19200',
+    '6': '38400',
+    '7': '57600',
+    '8': '115200',
+    '9': '230400',
+    'A': '460800',
+    'B': '921600',
+    'C': '1382400'
+}
+
+parities = {
+    'PO' : 'ODD',
+    'PE' : 'EVEN',
+    'PN' : 'NONE',
+}
+
+roles = {
+    'PO' : 'ODD',
+    'PE' : 'EVEN',
+    'PN' : 'NONE',
+}
+
 while True:
     input_chars = []
     while supervisor.runtime.serial_bytes_available:
@@ -12,18 +39,24 @@ while True:
             sys.stdout.write('OK')
         else:
             if input_cmd.startswith('AT+'):
-                message = input_cmd[3:]
-                if message == 'VERSION':
-                    sys.stdout.write(' LinvorV1.8')
-                elif message.startswith('BAUD'):
-                    sys.stdout.write('OK1200')
-                elif message.startswith('NAME'):
+                data = input_cmd[3:]
+                if data == 'VERSION':
+                    sys.stdout.write('LinvorV1.8')
+                elif data.startswith('BAUD'):
+                    baud = data[4:]
+                    if baud in bauds:
+                        sys.stdout.write('OK%s' % bauds[baud])
+                    else:
+                        sys.stdout.write("Unknown baud: '%s'" % baud)
+                elif data.startswith('NAME'):
                     sys.stdout.write('OKname')
-                elif message.startswith('PIN'):
+                elif data.startswith('PIN'):
                     sys.stdout.write('OKsetpin')
-                elif message in ('PE', 'PO', 'PN'):
-                    sys.stdout.write('OK ODD')
+                elif data.startswith('ROLE='):
+                    sys.stdout.write('OK')
+                elif data in parities:
+                    sys.stdout.write('OK %s' % parities[data])
                 else:
-                    sys.stdout.write('Unknown msg: "%s"' % message)
+                    sys.stdout.write('Unknown msg: "%s"' % data)
             else:
-                sys.stdout.write('Unknown: "%s"' % input_cmd)
+                sys.stdout.write('Unknown cmd: "%s"' % input_cmd)
