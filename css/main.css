@@ -1,19 +1,4 @@
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #1c1c1e;
-    color: lightgray;
-  }
-
-  a {
-    color: #8AB4F8;
-  }
-
-  a:visited {
-    color: #b18af8;
-  }
-}
-
 .no-web-serial {
   font-size: larger;
   color: red;
@@ -68,32 +53,29 @@
   background-color: rgb(255, 174, 174);
   transition-property: background-color;
   transition-duration: 0.5s;
-  color: black;
+  color: black !important;
 }
 
 .open-error a {
-  color: #003c9c;
+  color: #003c9c !important;
 }
 
 .open-error a:visited {
-  color: #5f007c;
-}
-
-#connect-info {
-  color: rgb(216, 216, 216);
-}
-
-#connect-info a {
-  color: rgb(164, 184, 250);
-}
-
-#connect-info a:visited {
-  color: rgb(230, 164, 250);
+  color: #5f007c !important;
 }
 
 #connect-banner {
+  color: rgb(216, 216, 216);
   padding: 10px;
   margin-bottom: 20px;
+}
+
+#connect-banner a {
+  color: rgb(164, 184, 250);
+}
+
+#connect-banner a:visited {
+  color: rgb(230, 164, 250);
 }
 
 .align-right {
@@ -129,4 +111,19 @@
   opacity: 1;
   color: red;
   transition-duration: 0.25s;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1c1c1e;
+    color: lightgray;
+  }
+
+  a {
+    color: #8AB4F8;
+  }
+
+  a:visited {
+    color: #b18af8;
+  }
 }
