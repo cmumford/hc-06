@@ -501,7 +501,7 @@ async function reopenPort() {
       portStatus = PortStatus.OpenError;
     }
   } finally {
-    setConnectBannerState();
+    setControlState();
   }
 }
 
