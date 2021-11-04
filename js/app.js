@@ -13,10 +13,10 @@ const DeviceProperty = {
  * Enumeration for the last write state of a device property.
  */
 const WriteState = {
-  Unwritten: 'Unwritten',
-  Writing: 'Writing',
-  Error: 'Error',
-  Success: 'Success'
+  UNWRITTEN: 'Unwritten',
+  WRITING: 'Writing',
+  ERROR: 'Error',
+  SUCCESS: 'Success'
 };
 
 const PortStatus = {
@@ -132,7 +132,8 @@ function isWebSerialSupported() {
  * Read the saved device state from the database.
  *
  * @param {object} db The open Indexed DB.
- * @returns {Promise<object>} A promise that resolves to the database state dictionary.
+ * @returns {Promise<object>} A promise that resolves to the database state
+ *     dictionary.
  */
 function getDbData(db) {
   return new Promise((resolve, reject) => {
@@ -164,7 +165,6 @@ function putDbData(db) {
     let request = store.put(deviceState, kDbPrimaryKeyValue);
     request.onsuccess = resolve;
   });
-
 }
 
 // Open the device state database and read the saved device state.
@@ -212,7 +212,7 @@ async function sendAtCommand(payload) {
     // The goal is to defer resolution until the next line
     // response text is received from the device.
     // Believe this is the **wrong** way to do this.
-    pendingResponsePromises.push({ resolve: resolve, reject: reject });
+    pendingResponsePromises.push({resolve: resolve, reject: reject});
   });
 
   const message = payload ? `AT+${payload}` : 'AT';
@@ -326,7 +326,7 @@ async function readPortData() {
     reader = port.readable.getReader();
     try {
       while (true) {
-        const { value, done } = await reader.read();
+        const {value, done} = await reader.read();
         if (value) {
           handleDeviceResponseData(value);
         }
@@ -392,7 +392,7 @@ function clearConnectionState() {
   pendingResponsePromises = [];
 
   Object.entries(DeviceProperty).forEach(([k, v]) => {
-    setValueWriteState(k, WriteState.Unwritten);
+    setValueWriteState(k, WriteState.UNWRITTEN);
   });
 }
 
@@ -583,12 +583,12 @@ async function onBaudSelected(selectObject) {
   deviceState.baudRate = baudAbbrevToName[value];
   if (isPortOpen()) {
     try {
-      setValueWriteState(DeviceProperty.Baud, WriteState.Writing);
+      setValueWriteState(DeviceProperty.Baud, WriteState.WRITING);
       await setPortBaud(value);
       await putDbData(deviceStateDb);
-      setValueWriteState(DeviceProperty.Baud, WriteState.Success);
+      setValueWriteState(DeviceProperty.Baud, WriteState.SUCCESS);
     } catch (ex) {
-      setValueWriteState(DeviceProperty.Baud, WriteState.Error);
+      setValueWriteState(DeviceProperty.Baud, WriteState.ERROR);
     }
 
     await sleepDeviceCommandInterval();
@@ -608,15 +608,15 @@ async function onParitySelected(selectObject) {
   let newParity = parityAbbrevToName[abbrev];
   if (isPortOpen()) {
     try {
-      setValueWriteState(DeviceProperty.Parity, WriteState.Writing);
+      setValueWriteState(DeviceProperty.Parity, WriteState.WRITING);
       await setParity(abbrev);
       deviceState.parity = newParity;
       await putDbData(deviceStateDb);
-      setValueWriteState(DeviceProperty.Parity, WriteState.Success);
+      setValueWriteState(DeviceProperty.Parity, WriteState.SUCCESS);
       await sleepDeviceCommandInterval();
       await reopenPort();
     } catch (ex) {
-      setValueWriteState(DeviceProperty.Parity, WriteState.Error);
+      setValueWriteState(DeviceProperty.Parity, WriteState.ERROR);
     }
   }
 }
@@ -633,13 +633,13 @@ async function onRoleSelected(selectObject) {
   const abbrev = selectObject.value;
   if (isPortOpen()) {
     try {
-      setValueWriteState(DeviceProperty.Role, WriteState.Writing);
+      setValueWriteState(DeviceProperty.Role, WriteState.WRITING);
       await setRole(abbrev);
       deviceState.mode = roleAbbrevToName[abbrev];
       await putDbData(deviceStateDb);
-      setValueWriteState(DeviceProperty.Role, WriteState.Success);
+      setValueWriteState(DeviceProperty.Role, WriteState.SUCCESS);
     } catch (ex) {
-      setValueWriteState(DeviceProperty.Role, WriteState.Error);
+      setValueWriteState(DeviceProperty.Role, WriteState.ERROR);
     }
   }
 }
@@ -695,7 +695,7 @@ async function populatePortMenu() {
       if (portMenu.options[i].port) {
         const info = await portMenu.options[i].port.getInfo();
         if (info.usbProductId == lastOpenedPortInfo.usbProductId &&
-          info.usbVendorId == lastOpenedPortInfo.usbVendorId) {
+            info.usbVendorId == lastOpenedPortInfo.usbVendorId) {
           idxToSelect = i;
           break;
         }
@@ -716,13 +716,13 @@ async function changeNameCallback() {
   if (name.length > 0 && name.length <= 20) {
     console.log(`Setting device name to "${name}"`);
     try {
-      setValueWriteState(DeviceProperty.Name, WriteState.Writing);
+      setValueWriteState(DeviceProperty.Name, WriteState.WRITING);
       await setDeviceName(name);
       deviceState.name = name;
       await putDbData(deviceStateDb);
-      setValueWriteState(DeviceProperty.Name, WriteState.Success);
+      setValueWriteState(DeviceProperty.Name, WriteState.SUCCESS);
     } catch (ex) {
-      setValueWriteState(DeviceProperty.Name, WriteState.Error);
+      setValueWriteState(DeviceProperty.Name, WriteState.ERROR);
     }
   }
 }
@@ -739,7 +739,7 @@ function onNameChanged(element) {
     changeNameTimeout = undefined;
   }
   changeNameTimeout =
-    window.setTimeout(changeNameCallback, /*milliseconds=*/ 500);
+      window.setTimeout(changeNameCallback, /*milliseconds=*/ 500);
 }
 
 /**
@@ -752,13 +752,13 @@ async function changePinCallback() {
   const pin = $('aligned-pin').value;
   console.log(`Setting PIN to "${pin}"`);
   try {
-    setValueWriteState(DeviceProperty.PIN, WriteState.Writing);
+    setValueWriteState(DeviceProperty.PIN, WriteState.WRITING);
     await setDevicePin(pin);
     deviceState.pin = pin;
     await putDbData(deviceStateDb);
-    setValueWriteState(DeviceProperty.PIN, WriteState.Success);
+    setValueWriteState(DeviceProperty.PIN, WriteState.SUCCESS);
   } catch (ex) {
-    setValueWriteState(DeviceProperty.PIN, WriteState.Error);
+    setValueWriteState(DeviceProperty.PIN, WriteState.ERROR);
   }
 }
 
@@ -774,7 +774,7 @@ function onPinChanged(element) {
     changePinTimeout = undefined;
   }
   changePinTimeout =
-    window.setTimeout(changePinCallback, /*milliseconds=*/ 500);
+      window.setTimeout(changePinCallback, /*milliseconds=*/ 500);
 }
 
 /**
@@ -827,9 +827,7 @@ function getPropertyStateNodeId(prop) {
 
 function setWriteStateClass(element, style) {
   const allStatusClasses = [
-    'write-status-hidden',
-    'write-status-writing',
-    'write-status-error',
+    'write-status-hidden', 'write-status-writing', 'write-status-error',
     'write-status-success'
   ];
 
@@ -850,19 +848,19 @@ function setValueWriteState(prop, state) {
   const elemId = getPropertyStateNodeId(prop);
   const elem = $(elemId);
   switch (state) {
-    case WriteState.Unwritten:
+    case WriteState.UNWRITTEN:
       setWriteStateClass(elem, 'write-status-hidden');
       elem.innerText = '';
       break;
-    case WriteState.Writing:
+    case WriteState.WRITING:
       setWriteStateClass(elem, 'write-status-writing');
       elem.innerText = '(updating)';
       break;
-    case WriteState.Error:
+    case WriteState.ERROR:
       setWriteStateClass(elem, 'write-status-error');
       elem.innerText = '(ERROR)';
       break;
-    case WriteState.Success:
+    case WriteState.SUCCESS:
       setWriteStateClass(elem, 'write-status-success');
       elem.innerText = '(updated)';
       break;
@@ -904,7 +902,7 @@ async function setControlState() {
  */
 function setControlValues() {
   const value =
-    parseInt(dictReverseLookup(baudAbbrevToName, deviceState.baudRate), 16);
+      parseInt(dictReverseLookup(baudAbbrevToName, deviceState.baudRate), 16);
   const index = value - 1;
   $('aligned-baud').selectedIndex = index;
 }
