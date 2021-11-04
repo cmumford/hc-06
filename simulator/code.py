@@ -17,15 +17,14 @@ bauds = {
 }
 
 parities = {
-    'PO' : 'ODD',
-    'PE' : 'EVEN',
-    'PN' : 'NONE',
+    'PO': 'ODD',
+    'PE': 'EVEN',
+    'PN': 'NONE',
 }
 
 roles = {
-    'PO' : 'ODD',
-    'PE' : 'EVEN',
-    'PN' : 'NONE',
+    'S': 'SLAVE',
+    'M': 'MASTER',
 }
 
 while True:
@@ -53,7 +52,11 @@ while True:
                 elif data.startswith('PIN'):
                     sys.stdout.write('OKsetpin')
                 elif data.startswith('ROLE='):
-                    sys.stdout.write('OK')
+                    mode = data[5:]
+                    if mode in roles:
+                        sys.stdout.write('OK+ROLE:%s' % mode)
+                    else:
+                        sys.stdout.write('Bad ROLE: "%s"' % mode)
                 elif data in parities:
                     sys.stdout.write('OK %s' % parities[data])
                 else:
