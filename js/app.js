@@ -465,15 +465,13 @@ async function sleepDeviceCommandInterval() {
  */
 async function openPortVerifyDevice(thePort) {
   await openPort(thePort);
-  const gotResponse = await ping();
-  if (gotResponse) {
+  const version = await getVersion();
+  if (version) {
+    console.info(`version: "${version}"`);
     portStatus = PortStatus.Open;
   } else {
-    throw new Error(`Device ping failed.`);
+    throw new Error(`Unable to get version`);
   }
-  await sleepDeviceCommandInterval();
-  const version = await getVersion();
-  console.info(`version: "${version}"`);
 }
 
 /**
@@ -593,7 +591,6 @@ async function onBaudSelected(selectObject) {
     }
 
     await sleepDeviceCommandInterval();
-
     await reopenPort();
   }
 }
