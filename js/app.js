@@ -2,11 +2,11 @@
  * Enumeration for the HC-06 device properties.
  */
 const DeviceProperty = {
-  Name: 'Name',
+  NAME: 'Name',
   PIN: 'PIN',
-  Baud: 'Baud',
-  Parity: 'Parity',
-  Role: 'Role'
+  BAUD: 'Baud',
+  PARITY: 'Parity',
+  ROLE: 'Role'
 };
 
 /**
@@ -583,12 +583,12 @@ async function onBaudSelected(selectObject) {
   deviceState.baudRate = baudAbbrevToName[value];
   if (isPortOpen()) {
     try {
-      setValueWriteState(DeviceProperty.Baud, WriteState.WRITING);
+      setValueWriteState(DeviceProperty.BAUD, WriteState.WRITING);
       await setPortBaud(value);
       await putDbData(deviceStateDb);
-      setValueWriteState(DeviceProperty.Baud, WriteState.SUCCESS);
+      setValueWriteState(DeviceProperty.BAUD, WriteState.SUCCESS);
     } catch (ex) {
-      setValueWriteState(DeviceProperty.Baud, WriteState.ERROR);
+      setValueWriteState(DeviceProperty.BAUD, WriteState.ERROR);
     }
 
     await sleepDeviceCommandInterval();
@@ -608,15 +608,15 @@ async function onParitySelected(selectObject) {
   let newParity = parityAbbrevToName[abbrev];
   if (isPortOpen()) {
     try {
-      setValueWriteState(DeviceProperty.Parity, WriteState.WRITING);
+      setValueWriteState(DeviceProperty.PARITY, WriteState.WRITING);
       await setParity(abbrev);
       deviceState.parity = newParity;
       await putDbData(deviceStateDb);
-      setValueWriteState(DeviceProperty.Parity, WriteState.SUCCESS);
+      setValueWriteState(DeviceProperty.PARITY, WriteState.SUCCESS);
       await sleepDeviceCommandInterval();
       await reopenPort();
     } catch (ex) {
-      setValueWriteState(DeviceProperty.Parity, WriteState.ERROR);
+      setValueWriteState(DeviceProperty.PARITY, WriteState.ERROR);
     }
   }
 }
@@ -633,13 +633,13 @@ async function onRoleSelected(selectObject) {
   const abbrev = selectObject.value;
   if (isPortOpen()) {
     try {
-      setValueWriteState(DeviceProperty.Role, WriteState.WRITING);
+      setValueWriteState(DeviceProperty.ROLE, WriteState.WRITING);
       await setRole(abbrev);
       deviceState.mode = roleAbbrevToName[abbrev];
       await putDbData(deviceStateDb);
-      setValueWriteState(DeviceProperty.Role, WriteState.SUCCESS);
+      setValueWriteState(DeviceProperty.ROLE, WriteState.SUCCESS);
     } catch (ex) {
-      setValueWriteState(DeviceProperty.Role, WriteState.ERROR);
+      setValueWriteState(DeviceProperty.ROLE, WriteState.ERROR);
     }
   }
 }
@@ -716,13 +716,13 @@ async function changeNameCallback() {
   if (name.length > 0 && name.length <= 20) {
     console.log(`Setting device name to "${name}"`);
     try {
-      setValueWriteState(DeviceProperty.Name, WriteState.WRITING);
+      setValueWriteState(DeviceProperty.NAME, WriteState.WRITING);
       await setDeviceName(name);
       deviceState.name = name;
       await putDbData(deviceStateDb);
-      setValueWriteState(DeviceProperty.Name, WriteState.SUCCESS);
+      setValueWriteState(DeviceProperty.NAME, WriteState.SUCCESS);
     } catch (ex) {
-      setValueWriteState(DeviceProperty.Name, WriteState.ERROR);
+      setValueWriteState(DeviceProperty.NAME, WriteState.ERROR);
     }
   }
 }
