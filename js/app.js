@@ -323,8 +323,8 @@ async function closePort() {
  */
 async function readPortData() {
   while (port && port.readable) {
+    reader = port.readable.getReader();
     try {
-      reader = port.readable.getReader();
       while (true) {
         const { value, done } = await reader.read();
         if (value) {
@@ -334,10 +334,11 @@ async function readPortData() {
           break;
         }
       }
-      reader.releaseLock();
-      reader = undefined;
     } catch (ex) {
       console.error(ex);
+    } finally {
+      reader.releaseLock();
+      reader = undefined;
     }
   }
   // Function gets here when the port has been closed.
