@@ -43,6 +43,7 @@ let changePinTimeout;
 let responseTimeout;
 let currentResponseLine = '';
 let pendingResponsePromises = [];
+let deviceVersion;
 const kDbName = 'HC-06';
 const kDbVersion = 1;
 const kDbObjStoreName = 'state';
@@ -382,6 +383,7 @@ function clearConnectionState() {
   }
 
   portStatus = PortStatus.Closed;
+  deviceVersion = undefined;
 
   currentResponseLine = '';
   pendingResponsePromises.forEach((promise) => {
@@ -464,9 +466,9 @@ async function sleepDeviceCommandInterval() {
  */
 async function openPortVerifyDevice(thePort) {
   await openPort(thePort);
-  const version = await getVersion();
-  if (version) {
-    console.info(`version: "${version}"`);
+  deviceVersion = await getVersion();
+  if (deviceVersion) {
+    console.info(`version: "${deviceVersion}"`);
     portStatus = PortStatus.Open;
   } else {
     throw new Error(`Unable to get version`);
@@ -527,7 +529,7 @@ async function toggleConnectState() {
       portStatus = PortStatus.OpenError;
     }
   } finally {
-    setConnectBannerState();
+    setControlState();
   }
 }
 
@@ -888,6 +890,12 @@ async function setControlState() {
     $('open-port-div').style.visibility = 'visible';
   } else {
     $('open-port-div').style.visibility = 'hidden';
+  }
+
+  if (deviceVersion) {
+    $('aligned-version').innerText = deviceVersion;
+  } else {
+    $('aligned-version').innerText = '';
   }
 }
 
