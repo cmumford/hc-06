@@ -99,7 +99,7 @@ function resolveResponsePromises(response) {
 /**
  * Process some response data from the device.
  *
- * @param {*} data The binary response data read from the serial port.
+ * @param {Uint8Array} data The binary response data read from the serial port.
  */
 function handleDeviceResponseData(data) {
   const text = utf8Decoder.decode(data).trim();
