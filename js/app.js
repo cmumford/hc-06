@@ -85,7 +85,6 @@ function dictReverseLookup(dict, value) {
  * @param {string} response The response text from the device.
  */
 function resolveResponsePromises(response) {
-  console.log(`Got response: "${response}"`);
   if (pendingResponsePromises.length) {
     pendingResponsePromises.forEach((promise) => {
       promise.resolve(response);
@@ -612,6 +611,7 @@ async function onParitySelected(selectObject) {
       deviceState.parity = newParity;
       await putDbData(deviceStateDb);
       setValueWriteState(DeviceProperty.Parity, WriteState.Success);
+      await sleepDeviceCommandInterval();
       await reopenPort();
     } catch (ex) {
       setValueWriteState(DeviceProperty.Parity, WriteState.Error);
