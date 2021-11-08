@@ -399,6 +399,7 @@ function clearConnectionState() {
 /**
  * Open the serial port.
  *
+ * @param {SerialPort} toOpen The serial port to open.
  * @return {Promise<undefined>} A promise that resolves after the port opens.
  */
 async function openPort(toOpen) {
